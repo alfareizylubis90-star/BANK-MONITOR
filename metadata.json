@@ -1,0 +1,6 @@
+{
+  "name": "Bank Status Monitor",
+  "description": "Sistem monitoring operasional status bank, nomor rekening, dan status operasional real-time dengan integrasi template WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
