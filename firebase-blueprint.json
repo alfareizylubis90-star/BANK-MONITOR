@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "Bank": {
+      "title": "Bank",
+      "description": "Bank account status record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "accountName": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "name", "accountNumber", "accountName", "status"]
+    },
+    "QrisRecord": {
+      "title": "QrisRecord",
+      "description": "QRIS Minera Cacing record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tanggal": { "type": "string" },
+        "bank": { "type": "string" },
+        "rekening": { "type": "string" },
+        "nama": { "type": "string" },
+        "nominal": { "type": "number" },
+        "status": { "type": "string" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "required": ["id", "tanggal", "bank", "rekening", "nama", "nominal", "status", "created_by", "created_at"]
+    }
+  },
+  "firestore": {
+    "/banks/{bankId}": {
+      "schema": "Bank",
+      "description": "List of bank accounts"
+    },
+    "/qris_cacing/{qrisId}": {
+      "schema": "QrisRecord",
+      "description": "List of QRIS records"
+    }
+  }
+}

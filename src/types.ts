@@ -8,6 +8,7 @@ export interface Bank {
   status: BankStatus;
   notes: string;
   updatedAt: string;
+  hideFromDashboard?: boolean;
 }
 
 export interface StatusCounter {
@@ -27,4 +28,17 @@ export interface ParsedFollowUp {
   action: string;        // e.g. "DI OFFKAN"
   deviceStatus: string;  // e.g. "HP MASIH DI SITUS"
 }
+
+export interface QrisRecord {
+  id: string;
+  tanggal: string; // ISO date string
+  bank: string;
+  rekening: string;
+  nama: string;
+  nominal: number;
+  status: string; // 'Pending' | 'Diproses' | 'Sukses' etc
+  created_by: string;
+  created_at: string; // ISO date string
+}
+
 

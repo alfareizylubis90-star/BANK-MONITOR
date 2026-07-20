@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, AlertCircle } from 'lucide-react';
+import { X, AlertCircle, EyeOff } from 'lucide-react';
 import { Bank, BankStatus } from '../types';
 
 interface EditBankModalProps {
@@ -16,6 +16,7 @@ export default function EditBankModal({ isOpen, onClose, bank, onSave }: EditBan
   const [formAccountName, setFormAccountName] = useState('');
   const [formStatus, setFormStatus] = useState<BankStatus>('Aman');
   const [formNotes, setFormNotes] = useState('');
+  const [formHideFromDashboard, setFormHideFromDashboard] = useState(false);
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -26,6 +27,7 @@ export default function EditBankModal({ isOpen, onClose, bank, onSave }: EditBan
       setFormAccountName(bank.accountName);
       setFormStatus(bank.status);
       setFormNotes(bank.notes || '');
+      setFormHideFromDashboard(!!bank.hideFromDashboard);
       setError('');
     }
   }, [bank, isOpen]);
@@ -57,6 +59,7 @@ export default function EditBankModal({ isOpen, onClose, bank, onSave }: EditBan
         accountName: formAccountName.trim().toUpperCase(),
         status: formStatus,
         notes: formNotes.trim(),
+        hideFromDashboard: formHideFromDashboard,
       });
       onClose();
     } catch (err: any) {
@@ -191,6 +194,31 @@ export default function EditBankModal({ isOpen, onClose, bank, onSave }: EditBan
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Sembunyikan dari Dashboard Utama */}
+              <div className="flex items-center justify-between p-3 bg-[#060913]/40 border border-white/5 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <EyeOff className="h-4 w-4 text-slate-400" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-200">Sembunyikan dari Dashboard Utama</span>
+                    <span className="text-[10px] text-slate-400 font-semibold leading-relaxed">Rekening tidak akan muncul di monitoring utama</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormHideFromDashboard(!formHideFromDashboard)}
+                  className={`w-9 h-5 flex items-center rounded-full p-0.5 cursor-pointer transition-colors ${
+                    formHideFromDashboard ? 'bg-indigo-600' : 'bg-slate-800'
+                  }`}
+                  disabled={isSaving}
+                >
+                  <div
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                      formHideFromDashboard ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Keterangan */}
