@@ -18,6 +18,7 @@ import {
   Info,
   Clock,
   ChevronRight,
+  ChevronDown,
   AlertCircle,
   Shield,
   Eye,
@@ -43,6 +44,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Bank, BankStatus, QrisRecord } from './types';
 import FollowUpReport from './components/FollowUpReport';
+import PendingWdReport from './components/PendingWdReport';
 import EditBankModal from './components/EditBankModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import HistoryPanel from './components/HistoryPanel';
@@ -256,9 +258,9 @@ export default function App() {
   }, [banks, role]);
 
   // Active Tab state
-  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris'>(() => {
+  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris' | 'pending_wd'>(() => {
     const saved = localStorage.getItem('bank_status_active_tab');
-    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris') {
+    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris' || saved === 'pending_wd') {
       return saved as any;
     }
     return 'monitor';
@@ -268,6 +270,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('bank_status_active_tab', activeTab);
   }, [activeTab]);
+
+  // Dashboard Dropdown state in sidebar
+  const [isDashboardDropdownOpen, setIsDashboardDropdownOpen] = useState(true);
 
   // Follow Up States
   const [rawFollowUpText, setRawFollowUpText] = useState(() => {
@@ -1916,9 +1921,18 @@ export default function App() {
     );
   };
 
-  // Sidebar Menu Items definition
-  const menuItems = [
-    { id: 'monitor', name: 'Dashboard', icon: CreditCard },
+  // Dashboard Sub-menu Items (Dropdown items under DASHBOARD)
+  const dashboardSubItems = [
+    { 
+      id: 'monitor', 
+      name: 'Dashboard Utama', 
+      icon: LayoutList,
+      action: () => {
+        setActiveTab('monitor');
+        setShowOnlyBermasalah(false);
+      },
+      isActive: activeTab === 'monitor' && !showOnlyBermasalah
+    },
     { 
       id: 'bermasalah', 
       name: 'Rek Bermasalah', 
@@ -1926,13 +1940,144 @@ export default function App() {
       badge: counters.RTP + counters['Off Sementara'] + counters['Cabut Kas 1'] > 0 
         ? `${counters.RTP + counters['Off Sementara'] + counters['Cabut Kas 1']}` 
         : undefined, 
-      badgeColor: 'bg-rose-500/20 text-rose-300' 
+      badgeColor: 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
+      action: () => {
+        setActiveTab('monitor');
+        setShowOnlyBermasalah(true);
+      },
+      isActive: activeTab === 'monitor' && showOnlyBermasalah
     },
-    { id: 'qris', name: 'Withdraw / QRIS', icon: Building2 },
-    { id: 'followup', name: 'Laporan', icon: FileText },
-    role === 'admin' ? { id: 'history', name: 'Riwayat', icon: Clock } : null,
-    { id: 'settings', name: 'Pengaturan', icon: Sliders }
+    { 
+      id: 'pending_wd', 
+      name: 'Laporan WD Pending', 
+      icon: Zap,
+      badge: 'HOT',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+      action: () => {
+        setActiveTab('pending_wd');
+      },
+      isActive: activeTab === 'pending_wd'
+    }
+  ];
+
+  // Other Top Level Menu Items
+  const otherMenuItems = [
+    { id: 'followup', name: 'Laporan', icon: FileText, action: () => setActiveTab('followup'), isActive: activeTab === 'followup' },
+    role === 'admin' ? { id: 'history', name: 'Riwayat', icon: Clock, action: () => setActiveTab('history'), isActive: activeTab === 'history' } : null,
+    { id: 'settings', name: 'Pengaturan', icon: Sliders, action: () => setActiveTab('settings'), isActive: activeTab === 'settings' }
   ].filter(Boolean) as any[];
+
+  // Render Sidebar Navigation with Dashboard Dropdown Accordion
+  const renderSidebarNav = (isMobile: boolean = false) => {
+    const isDashboardActiveGroup = ['monitor', 'pending_wd'].includes(activeTab);
+
+    return (
+      <nav className="flex-1 px-3 py-5 space-y-2 overflow-y-auto">
+        {/* DASHBOARD DROPDOWN */}
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => setIsDashboardDropdownOpen(!isDashboardDropdownOpen)}
+            className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+              isDashboardActiveGroup
+                ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/10 text-amber-300 border border-amber-500/30 shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <CreditCard className="h-4 w-4 text-amber-400 shrink-0" />
+              <span>DASHBOARD</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/30">
+                {dashboardSubItems.length} MENU
+              </span>
+              {isDashboardDropdownOpen ? (
+                <ChevronDown className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+              )}
+            </div>
+          </button>
+
+          {/* Submenu Dropdown Items */}
+          <AnimatePresence initial={false}>
+            {isDashboardDropdownOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden pl-2.5 space-y-1 border-l-2 border-amber-500/30 ml-4 my-1.5"
+              >
+                {dashboardSubItems.map((sub) => {
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        sub.action();
+                        if (isMobile) setIsMobileSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                        sub.isActive
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 font-extrabold'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <sub.icon className={`h-3.5 w-3.5 shrink-0 ${sub.isActive ? 'text-white' : 'text-slate-400'}`} />
+                        <span>{sub.name}</span>
+                      </div>
+                      {sub.badge && (
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${sub.badgeColor}`}>
+                          {sub.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Separator */}
+        <div className="pt-3 pb-1">
+          <div className="h-px bg-white/10 mx-2" />
+          <span className="text-[9px] font-mono font-bold text-slate-500 tracking-widest uppercase px-3 pt-2 block">
+            SISTEM & LAPORAN
+          </span>
+        </div>
+
+        {/* OTHER MENU ITEMS */}
+        <div className="space-y-1">
+          {otherMenuItems.map((item) => {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  item.action();
+                  if (isMobile) setIsMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                  item.isActive
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/10'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  <span>{item.name}</span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  };
 
   // Render Settings Tab Section
   const renderSettingsSection = () => {
@@ -2710,45 +2855,7 @@ export default function App() {
         </div>
 
         {/* Sidebar Menu */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-          {menuItems.map((item) => {
-            const isActive = activeTab === item.id || (item.id === 'bermasalah' && activeTab === 'monitor' && showOnlyBermasalah);
-            const isDashboardActive = item.id === 'monitor' && activeTab === 'monitor' && !showOnlyBermasalah;
-            const isItemActive = (item.id === 'monitor' && isDashboardActive) || (item.id === 'bermasalah' && activeTab === 'monitor' && showOnlyBermasalah) || (item.id !== 'monitor' && item.id !== 'bermasalah' && activeTab === item.id);
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === 'monitor') {
-                    setActiveTab('monitor');
-                    setShowOnlyBermasalah(false);
-                  } else if (item.id === 'bermasalah') {
-                    setActiveTab('monitor');
-                    setShowOnlyBermasalah(true);
-                  } else {
-                    setActiveTab(item.id);
-                  }
-                }}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                  isItemActive
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/10'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  <span>{item.name}</span>
-                </div>
-                {item.badge && (
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold ${item.badgeColor}`}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
+        {renderSidebarNav(false)}
 
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-white/[0.04] text-center">
@@ -2799,41 +2906,7 @@ export default function App() {
             </div>
 
             {/* Menu */}
-            <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-              {menuItems.map((item) => {
-                const isActive = activeTab === item.id || (item.id === 'bermasalah' && activeTab === 'monitor' && showOnlyBermasalah);
-                const isDashboardActive = item.id === 'monitor' && activeTab === 'monitor' && !showOnlyBermasalah;
-                const isItemActive = (item.id === 'monitor' && isDashboardActive) || (item.id === 'bermasalah' && activeTab === 'monitor' && showOnlyBermasalah) || (item.id !== 'monitor' && item.id !== 'bermasalah' && activeTab === item.id);
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      if (item.id === 'monitor') {
-                        setActiveTab('monitor');
-                        setShowOnlyBermasalah(false);
-                      } else if (item.id === 'bermasalah') {
-                        setActiveTab('monitor');
-                        setShowOnlyBermasalah(true);
-                      } else {
-                        setActiveTab(item.id);
-                      }
-                      setIsMobileSidebarOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                      isItemActive
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      <span>{item.name}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </nav>
+            {renderSidebarNav(true)}
 
             <div className="p-4 border-t border-white/[0.04] text-center">
               <p className="text-[10px] text-slate-500 font-bold font-mono">LIGABANDOT v1.0.0</p>
@@ -2875,6 +2948,7 @@ export default function App() {
                 }`}>
                   {activeTab === 'monitor' && (showOnlyBermasalah ? 'Rekening Bermasalah' : 'Dashboard Utama')}
                   {activeTab === 'qris' && 'Pencairan QRIS'}
+                  {activeTab === 'pending_wd' && 'Laporan WD Pending (Minera & Pay2Me)'}
                   {activeTab === 'followup' && 'Laporan Follow Up'}
                   {activeTab === 'history' && 'Riwayat Perubahan'}
                   {activeTab === 'settings' && 'Pengaturan Aplikasi'}
@@ -3970,6 +4044,10 @@ export default function App() {
             </div>
 
           </div>
+        )}
+
+        {activeTab === 'pending_wd' && (
+          <PendingWdReport showToast={showToast} />
         )}
 
         {activeTab === 'followup' && (
