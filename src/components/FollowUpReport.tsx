@@ -165,6 +165,16 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
     }
   };
 
+  const formatCleanNominal = (val: string): string => {
+    if (!val) return '0';
+    const clean = val.replace(/(\.00|,00)$/, '').replace(/,/g, '').replace(/\./g, '');
+    const parsed = parseInt(clean, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    return val.replace(/\./g, ',');
+  };
+
   // Report formatted for copying to clipboard
   const formattedFollowUpReport = useMemo(() => {
     let output = '';
@@ -188,7 +198,7 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
         output += `JENIS BANK : ${item.bankName.toUpperCase()}\n`;
         output += `NAMA REKENING : ${item.accountName.toUpperCase()}\n`;
         output += `NOMOR REKENING : ${item.accountNumber}\n`;
-        output += `SALDO BANK : ${item.balance}\n`;
+        output += `SALDO BANK : ${formatCleanNominal(item.balance)}\n`;
         
         // Combine problem, action, and device status cleanly
         const ketList = [item.problem, item.action, item.deviceStatus].map(s => s?.trim()).filter(Boolean);
@@ -214,7 +224,7 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
         grouped[bankKey].forEach((item, index) => {
           output += `NAMA REKENING : ${item.accountName.toUpperCase()}\n`;
           output += `NOMOR REKENING : ${item.accountNumber}\n`;
-          output += `SALDO BANK : ${item.balance}\n`;
+          output += `SALDO BANK : ${formatCleanNominal(item.balance)}\n`;
           
           const ketList = [item.problem, item.action, item.deviceStatus].map(s => s?.trim()).filter(Boolean);
           output += `KETERANGAN : ${ketList.join(' - ').toUpperCase()}\n`;
@@ -246,7 +256,7 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
       {/* LEFT SIDE PANEL: Input and Configurations (4 cols) */}
       <div className="lg:col-span-4 flex flex-col gap-6">
         {/* Paste box card */}
-        <div className="bg-[#0f1425]/70 backdrop-blur-md rounded-2xl border border-white/[0.06] p-6 space-y-4 shadow-2xl">
+        <div className="bg-[#0f1425]/70 backdrop-blur-md rounded-2xl border border-white/[0.06] p-6 space-y-4">
           <div className="flex items-center gap-2.5 border-b border-white/[0.06] pb-3.5">
             <span className="text-xl">📋</span>
             <div>
@@ -294,7 +304,7 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
         </div>
 
         {/* Metadata config card */}
-        <div className="bg-[#0f1425]/70 backdrop-blur-md rounded-2xl border border-white/[0.06] p-6 space-y-4 shadow-2xl">
+        <div className="bg-[#0f1425]/70 backdrop-blur-md rounded-2xl border border-white/[0.06] p-6 space-y-4">
           <div className="flex items-center gap-2.5 border-b border-white/[0.06] pb-3.5">
             <span className="text-xl">⚙️</span>
             <div>
@@ -334,18 +344,18 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
       {/* RIGHT SIDE PANEL: Result editor & WhatsApp text representation (8 cols) */}
       <div className="lg:col-span-8 flex flex-col gap-6">
         {/* Parsed Items List / Live Editor */}
-        <div className="bg-[#0f1425]/70 backdrop-blur-md rounded-2xl border border-white/[0.06] p-6 space-y-4 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
+        <div className="bg-[#0f1425]/70 backdrop-blur-md rounded-2xl border border-white/[0.06] p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-700/80 pb-4">
             <div className="flex items-center gap-2.5">
               <span className="text-xl">📝</span>
               <div>
                 <h3 className="font-bold text-white text-sm uppercase tracking-wider">Hasil Parse Data</h3>
-                <p className="text-[10px] text-slate-400 font-semibold tracking-wide">Sesuaikan atau edit kolom data di bawah jika ada kesalahan</p>
+                <p className="text-[10px] text-slate-300 font-semibold tracking-wide">Sesuaikan atau edit kolom data di bawah jika ada kesalahan</p>
               </div>
             </div>
             <button
               onClick={handleAddFollowUpItemManually}
-              className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 font-bold text-[10px] uppercase tracking-wider py-2 px-3.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+              className="bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 font-extrabold text-[10px] uppercase tracking-wider py-2 px-3.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer shadow-sm"
             >
               <Plus className="h-3.5 w-3.5" />
               Tambah Manual
@@ -353,10 +363,10 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
           </div>
 
           {followUpItems.length === 0 ? (
-            <div className="text-center py-12 bg-[#060913]/30 rounded-2xl border border-dashed border-white/10 flex flex-col items-center justify-center gap-2.5">
+            <div className="text-center py-12 bg-[#18233a] rounded-2xl border border-dashed border-slate-600 flex flex-col items-center justify-center gap-2.5">
               <span className="text-2xl">📥</span>
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wide">Belum Ada Data Ter-parse</h4>
-              <p className="text-[10px] text-slate-400 max-w-xs leading-relaxed font-semibold">
+              <p className="text-[10px] text-slate-300 max-w-xs leading-relaxed font-semibold">
                 Silakan tempel data spreadsheet di kolom kiri lalu tekan "Proses & Parse" atau gunakan tombol "Contoh Data".
               </p>
             </div>
@@ -370,12 +380,12 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="bg-[#060913]/40 hover:bg-[#060913]/70 rounded-xl p-4 border border-white/[0.04] relative group transition-all"
+                    className="bg-[#18233a] hover:bg-[#202e4d] rounded-xl p-4 border border-slate-600 relative group transition-all shadow-md"
                   >
                     <div className="absolute top-3.5 right-3.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => handleDeleteFollowUpItem(item.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition cursor-pointer border border-transparent hover:border-rose-500/10"
+                        className="p-1.5 text-slate-300 hover:text-rose-400 hover:bg-rose-500/20 rounded transition cursor-pointer border border-transparent hover:border-rose-500/30"
                         title="Hapus baris ini"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -383,10 +393,10 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
                     </div>
 
                     <div className="flex items-center gap-2 mb-3.5">
-                      <span className="text-[9px] uppercase bg-blue-500/20 text-blue-300 font-bold px-2.5 py-1 rounded-md">
+                      <span className="text-[9px] uppercase bg-blue-600/30 text-blue-200 border border-blue-400/30 font-bold px-2.5 py-1 rounded-md">
                         Baris #{idx + 1}
                       </span>
-                      <span className="text-[10px] text-slate-500 font-bold font-mono">
+                      <span className="text-[10px] text-slate-400 font-bold font-mono">
                         ID: {item.id.split('-')[2] || 'item'}
                       </span>
                     </div>
@@ -394,78 +404,78 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       {/* Jenis Bank */}
                       <div className="md:col-span-2">
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Jenis Bank:</label>
+                        <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">Jenis Bank:</label>
                         <input
                           type="text"
                           value={item.bankName}
                           onChange={(e) => handleUpdateFollowUpItem(item.id, 'bankName', e.target.value)}
-                          className="w-full text-xs font-semibold rounded-lg border border-white/10 px-2.5 py-1.5 bg-[#060913] focus:ring-1 focus:ring-blue-500 text-white"
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-600 px-2.5 py-1.5 bg-[#0e172a] focus:ring-1 focus:ring-blue-400 text-white"
                         />
                       </div>
 
                       {/* Saldo Bank */}
                       <div className="md:col-span-2">
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Saldo Bank:</label>
+                        <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">Saldo Bank:</label>
                         <input
                           type="text"
                           value={item.balance}
                           onChange={(e) => handleUpdateFollowUpItem(item.id, 'balance', e.target.value)}
-                          className="w-full text-xs font-semibold rounded-lg border border-white/10 px-2.5 py-1.5 bg-[#060913] focus:ring-1 focus:ring-blue-500 text-white"
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-600 px-2.5 py-1.5 bg-[#0e172a] focus:ring-1 focus:ring-blue-400 text-white"
                         />
                       </div>
 
                       {/* Nama Rekening */}
                       <div className="md:col-span-2">
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nama Rekening:</label>
+                        <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">Nama Rekening:</label>
                         <input
                           type="text"
                           value={item.accountName}
                           onChange={(e) => handleUpdateFollowUpItem(item.id, 'accountName', e.target.value)}
-                          className="w-full text-xs font-semibold rounded-lg border border-white/10 px-2.5 py-1.5 bg-[#060913] focus:ring-1 focus:ring-blue-500 text-white uppercase"
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-600 px-2.5 py-1.5 bg-[#0e172a] focus:ring-1 focus:ring-blue-400 text-white uppercase"
                         />
                       </div>
 
                       {/* Nomor Rekening */}
                       <div className="md:col-span-2">
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nomor Rekening:</label>
+                        <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">Nomor Rekening:</label>
                         <input
                           type="text"
                           value={item.accountNumber}
                           onChange={(e) => handleUpdateFollowUpItem(item.id, 'accountNumber', e.target.value)}
-                          className="w-full text-xs font-semibold rounded-lg border border-white/10 px-2.5 py-1.5 bg-[#060913] focus:ring-1 focus:ring-blue-500 text-white font-mono"
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-600 px-2.5 py-1.5 bg-[#0e172a] focus:ring-1 focus:ring-blue-400 text-white font-mono"
                         />
                       </div>
 
                       {/* Masalah */}
                       <div>
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Masalah:</label>
+                        <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">Masalah:</label>
                         <input
                           type="text"
                           value={item.problem}
                           onChange={(e) => handleUpdateFollowUpItem(item.id, 'problem', e.target.value)}
-                          className="w-full text-xs font-semibold rounded-lg border border-white/10 px-2.5 py-1.5 bg-[#060913] focus:ring-1 focus:ring-blue-500 text-white"
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-600 px-2.5 py-1.5 bg-[#0e172a] focus:ring-1 focus:ring-blue-400 text-white"
                         />
                       </div>
 
                       {/* Tindakan */}
                       <div>
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tindakan:</label>
+                        <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">Tindakan:</label>
                         <input
                           type="text"
                           value={item.action}
                           onChange={(e) => handleUpdateFollowUpItem(item.id, 'action', e.target.value)}
-                          className="w-full text-xs font-semibold rounded-lg border border-white/10 px-2.5 py-1.5 bg-[#060913] focus:ring-1 focus:ring-blue-500 text-white"
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-600 px-2.5 py-1.5 bg-[#0e172a] focus:ring-1 focus:ring-blue-400 text-white"
                         />
                       </div>
 
                       {/* Status HP */}
                       <div className="md:col-span-2">
-                        <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Device / HP:</label>
+                        <label className="block text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1">Status Device / HP:</label>
                         <input
                           type="text"
                           value={item.deviceStatus}
                           onChange={(e) => handleUpdateFollowUpItem(item.id, 'deviceStatus', e.target.value)}
-                          className="w-full text-xs font-semibold rounded-lg border border-white/10 px-2.5 py-1.5 bg-[#060913] focus:ring-1 focus:ring-blue-500 text-white"
+                          className="w-full text-xs font-semibold rounded-lg border border-slate-600 px-2.5 py-1.5 bg-[#0e172a] focus:ring-1 focus:ring-blue-400 text-white"
                         />
                       </div>
                     </div>
@@ -477,13 +487,13 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
         </div>
 
         {/* Formatted Text Box Output (WhatsApp Compatible) */}
-        <div className="bg-[#0f1425]/70 backdrop-blur-md rounded-2xl border border-white/[0.06] p-6 space-y-4 shadow-2xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/[0.06] pb-4 gap-3">
+        <div className="bg-[#0e172a] rounded-2xl border border-slate-700/80 p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-700/80 pb-4 gap-3">
             <div className="flex items-center gap-2.5">
               <span className="text-xl">📢</span>
               <div>
                 <h3 className="font-bold text-white text-sm uppercase tracking-wider">Output Laporan Terformat</h3>
-                <p className="text-[10px] text-slate-400 font-semibold tracking-wide">Format siap salin ke Whatsapp / Group LIGA BANDOT</p>
+                <p className="text-[10px] text-slate-300 font-semibold tracking-wide">Format siap salin ke Whatsapp / Group LIGA BANDOT</p>
               </div>
             </div>
             
@@ -492,21 +502,21 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
               {followUpItems.length > 0 && (
                 <button
                   onClick={handleClearFollowUp}
-                  className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 font-bold text-[10px] uppercase tracking-wider py-1.5 px-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 font-bold text-[10px] uppercase tracking-wider py-1.5 px-3 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                   title="Hapus semua data follow up"
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+                  <Trash2 className="h-3.5 w-3.5 text-rose-300 shrink-0" />
                   Hapus Laporan
                 </button>
               )}
 
-              <div className="bg-[#060913] p-1 rounded-xl flex items-center gap-1 border border-white/10">
+              <div className="bg-[#18233a] p-1 rounded-xl flex items-center gap-1 border border-slate-600">
                 <button
                   onClick={() => setReportFormatStyle('default')}
                   className={`text-[9px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase ${
                     reportFormatStyle === 'default'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-blue-600 text-white shadow-sm font-black'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   Urutan Tempel
@@ -515,8 +525,8 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
                   onClick={() => setReportFormatStyle('grouped')}
                   className={`text-[9px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer uppercase ${
                     reportFormatStyle === 'grouped'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-blue-600 text-white shadow-sm font-black'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
                   Group Per Bank
@@ -527,7 +537,7 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
 
           <div className="relative">
             <pre 
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/80 text-emerald-400 p-5 font-mono text-xs overflow-x-auto max-h-[380px] leading-relaxed select-all"
+              className="w-full rounded-2xl border border-slate-600 bg-[#18233a] text-emerald-300 p-5 font-mono text-xs overflow-x-auto max-h-[380px] leading-relaxed select-all shadow-inner"
               id="formatted-report-output"
             >
               {formattedFollowUpReport}
@@ -535,8 +545,8 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
             
             {followUpItems.length > 0 && (
               <div className="absolute bottom-4 right-4">
-                <span className="text-[10px] font-mono font-bold bg-[#060913]/80 text-slate-400 px-2 py-1 rounded border border-white/5">
-                  Klik area hitam untuk memilih semua teks
+                <span className="text-[10px] font-mono font-bold bg-[#0e172a] text-slate-300 px-2.5 py-1 rounded-md border border-slate-600 shadow-md">
+                  Klik area untuk memilih semua teks
                 </span>
               </div>
             )}
@@ -547,8 +557,8 @@ KRISTOBIAN YOBEL GINTING\t6955316294\tSALDO DI BEKUKAN / DI OFFKAN\t25,548,103\t
             disabled={followUpItems.length === 0}
             className={`w-full font-bold text-xs py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all border ${
               followUpItems.length === 0
-                ? 'bg-white/5 text-slate-500 border-white/5 shadow-none cursor-not-allowed'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/10 border-emerald-500/20 hover:shadow-lg'
+                ? 'bg-slate-800/60 text-slate-500 border-slate-700 shadow-none cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20 border-emerald-400/30 hover:shadow-xl font-extrabold active:scale-[0.99]'
             }`}
           >
             <Copy className="h-4 w-4" />

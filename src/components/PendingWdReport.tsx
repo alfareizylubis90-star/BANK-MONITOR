@@ -48,7 +48,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
     return localStorage.getItem('pending_wd_info_text') || 'LIGABANDOT';
   });
   const [tokoText, setTokoText] = useState(() => {
-    return localStorage.getItem('pending_wd_toko_text') || 'SMB4';
+    return localStorage.getItem('pending_wd_toko_text') || 'SMB240';
   });
   const [perihalText, setPerihalText] = useState(() => {
     return localStorage.getItem('pending_wd_perihal_text') || 'Transaksi AutoWd Minera Pending';
@@ -367,7 +367,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
   // Reset EVERYTHING to original defaults
   const handleResetAll = () => {
     setInfoText('LIGABANDOT');
-    setTokoText('SMB4');
+    setTokoText('SMB240');
     setPerihalText('Transaksi AutoWd Minera Pending');
     setKeteranganText('Untuk Saat ini Terdapat Transaksi Pengiriman Dana AutoWd Minera  Yang sedang dalam status pending ya ko/ci dan pada admin antrian penarikan tersebut ter hold sehingga tidak sesuai durasi, prihal ini akan di cek secara berkala dan menunggu keputusan final dari pihak MINERA');
     setProvider('MINERA');
@@ -376,7 +376,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
     setRawTransferRefs('');
     setRawNominals('');
     setItems([]);
-    setFormatMode('standard');
+    setFormatMode('itemized');
 
     localStorage.removeItem('pending_wd_raw_text');
     localStorage.removeItem('pending_wd_raw_userids');
@@ -402,6 +402,24 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
     return items.reduce((acc, curr) => acc + curr.nominalNum, 0);
   }, [items]);
 
+  // Helper to format nominal with comma thousands separator and NO decimals
+  const formatCleanNominal = (nomStr: string, nomNum?: number): string => {
+    let num = nomNum;
+    if (num === undefined || isNaN(num) || num <= 0) {
+      const clean = (nomStr || '').replace(/(\.00|,00)$/, '').replace(/,/g, '').replace(/\./g, '');
+      const parsed = parseInt(clean, 10);
+      if (!isNaN(parsed) && parsed > 0) num = parsed;
+    }
+    if (num && !isNaN(num) && num > 0) {
+      return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    let s = (nomStr || '0').replace(/(\.00|,00)$/, '');
+    if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+      s = s.replace(/\./g, ',');
+    }
+    return s;
+  };
+
   // Formatted Output Generator
   const formattedReportText = useMemo(() => {
     let text = `Info : ${infoText}\n`;
@@ -410,7 +428,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
     if (formatMode === 'itemized') {
       items.forEach((item, idx) => {
-        const cleanNominal = item.nominal.endsWith('.00') ? item.nominal.slice(0, -3) : item.nominal;
+        const cleanNominal = formatCleanNominal(item.nominal, item.nominalNum);
         text += `User id : ${item.userId}\n`;
         text += `Transfer Ref : ${item.transferRef}\n`;
         text += `Nominal : ${cleanNominal}\n`;
@@ -431,7 +449,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
       text += `\nNominal \n`;
       items.forEach(item => {
-        text += `${item.nominal}\n`;
+        text += `${formatCleanNominal(item.nominal, item.nominalNum)}\n`;
       });
     } else if (formatMode === 'numbered') {
       text += `User id :\n`;
@@ -446,18 +464,18 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
       text += `\nNominal \n`;
       items.forEach((item, idx) => {
-        text += `${idx + 1}. ${item.nominal}\n`;
+        text += `${idx + 1}. ${formatCleanNominal(item.nominal, item.nominalNum)}\n`;
       });
     } else if (formatMode === 'inline') {
       text += `User id : ${items.map(i => i.userId).join(', ')}\n\n`;
       text += `Transfer Ref : ${items.map(i => i.transferRef).join(', ')}\n\n`;
-      text += `Nominal : ${items.map(i => i.nominal).join(', ')}\n`;
+      text += `Nominal : ${items.map(i => formatCleanNominal(i.nominal, i.nominalNum)).join(', ')}\n`;
     } else if (formatMode === 'detailed') {
       text += `Daftar Transaksi Pending (${items.length} Data):\n`;
       items.forEach((item, idx) => {
-        text += `${idx + 1}. ${item.userId} | Ref: ${item.transferRef} | Bank: ${item.bankName} | Nominal: Rp ${item.nominal}\n`;
+        text += `${idx + 1}. ${item.userId} | Ref: ${item.transferRef} | Bank: ${item.bankName} | Nominal: Rp ${formatCleanNominal(item.nominal, item.nominalNum)}\n`;
       });
-      text += `\nTotal Nominal: Rp ${totalNominal.toLocaleString('id-ID')}\n`;
+      text += `\nTotal Nominal: Rp ${formatCleanNominal('', totalNominal)}\n`;
     }
 
     text += `\nKeterangan :\n`;
@@ -495,8 +513,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
   return (
     <div className="space-y-6">
       {/* Top Header Banner */}
-      <div className="bg-gradient-to-r from-[#0d1222] via-[#141b32] to-[#0f172a] p-6 rounded-2xl border border-amber-500/20 shadow-xl relative overflow-hidden">
-        <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+      <div className="bg-[#0f172a] p-6 rounded-2xl border border-amber-500/20 shadow-xl relative overflow-hidden">
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="flex items-center gap-4">
@@ -577,21 +594,21 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
         <div className="lg:col-span-7 space-y-6">
           
           {/* Section 1: Template Headers */}
-          <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/5">
-              <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+          <div className="bg-[#0e172a] border border-slate-700/80 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700/80">
+              <h3 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
                 <InfoIcon className="h-4 w-4" />
                 <span>Pengaturan Header Laporan</span>
               </h3>
-              <span className="text-[10px] text-slate-400 font-mono">Preset: {provider}</span>
+              <span className="text-[10px] text-slate-300 font-mono bg-[#18233a] px-2 py-0.5 rounded border border-slate-600">Preset: {provider}</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Info Website Dropdown + Input */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-between">
-                  <span>Info Website</span>
-                  <span className="text-[9px] text-amber-400/80 font-normal">Pilih / Ketik</span>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1 flex items-center justify-between">
+                  <span>INFO WEBSITE</span>
+                  <span className="text-[9px] text-[#f59e0b] font-bold">PILIH / KETIK</span>
                 </label>
                 <div className="space-y-1.5">
                   <select
@@ -601,23 +618,23 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                       }
                     }}
                     value={['LIGABANDOT', 'LIGACAPSA', 'LIGAMACAU', 'LIGASLOT', 'LIGATOTO', 'LIGAMINI', 'LIGA365', 'LIGA303'].includes(infoText) ? infoText : 'CUSTOM'}
-                    className="w-full bg-[#060913] border border-white/10 rounded-xl px-3 py-2 text-xs text-amber-300 focus:outline-none focus:border-amber-500/50 font-semibold cursor-pointer"
+                    className="w-full bg-[#0f172a] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59e0b] font-bold cursor-pointer"
                   >
-                    <option value="LIGABANDOT">LIGABANDOT</option>
-                    <option value="LIGACAPSA">LIGACAPSA</option>
-                    <option value="LIGAMACAU">LIGAMACAU</option>
-                    <option value="LIGASLOT">LIGASLOT</option>
-                    <option value="LIGATOTO">LIGATOTO</option>
-                    <option value="LIGAMINI">LIGAMINI</option>
-                    <option value="LIGA365">LIGA365</option>
-                    <option value="LIGA303">LIGA303</option>
-                    <option value="CUSTOM">✏️ Custom / Ketik Manual</option>
+                    <option value="LIGABANDOT" className="bg-[#0f172a] text-white font-bold">LIGABANDOT</option>
+                    <option value="LIGACAPSA" className="bg-[#0f172a] text-white font-bold">LIGACAPSA</option>
+                    <option value="LIGAMACAU" className="bg-[#0f172a] text-white font-bold">LIGAMACAU</option>
+                    <option value="LIGASLOT" className="bg-[#0f172a] text-white font-bold">LIGASLOT</option>
+                    <option value="LIGATOTO" className="bg-[#0f172a] text-white font-bold">LIGATOTO</option>
+                    <option value="LIGAMINI" className="bg-[#0f172a] text-white font-bold">LIGAMINI</option>
+                    <option value="LIGA365" className="bg-[#0f172a] text-white font-bold">LIGA365</option>
+                    <option value="LIGA303" className="bg-[#0f172a] text-white font-bold">LIGA303</option>
+                    <option value="CUSTOM" className="bg-[#0f172a] text-slate-300">✏️ Custom / Ketik Manual</option>
                   </select>
                   <input
                     type="text"
                     value={infoText}
                     onChange={(e) => setInfoText(e.target.value)}
-                    className="w-full bg-[#060913] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50 font-semibold"
+                    className="w-full bg-[#0f172a] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59e0b] font-bold"
                     placeholder="Contoh: LIGABANDOT"
                   />
                 </div>
@@ -625,9 +642,9 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
               {/* TOKO / Merchant Dropdown + Input */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-between">
-                  <span>TOKO / Merchant</span>
-                  <span className="text-[9px] text-amber-400/80 font-normal">Pilih / Ketik</span>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1 flex items-center justify-between">
+                  <span>TOKO / MERCHANT</span>
+                  <span className="text-[9px] text-[#f59e0b] font-bold">PILIH / KETIK</span>
                 </label>
                 <div className="space-y-1.5">
                   <select
@@ -636,27 +653,28 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                         setTokoText(e.target.value);
                       }
                     }}
-                    value={['SMB4', 'SMB1', 'SMB2', 'SMB3', 'SMB5', 'SMB6', 'SMB7', 'SMB8', 'LIGA1', 'LIGA2', 'LIGA3'].includes(tokoText) ? tokoText : 'CUSTOM'}
-                    className="w-full bg-[#060913] border border-white/10 rounded-xl px-3 py-2 text-xs text-emerald-300 focus:outline-none focus:border-amber-500/50 font-semibold cursor-pointer"
+                    value={['SMB240', 'SMB4', 'SMB1', 'SMB2', 'SMB3', 'SMB5', 'SMB6', 'SMB7', 'SMB8', 'LIGA1', 'LIGA2', 'LIGA3'].includes(tokoText) ? tokoText : 'CUSTOM'}
+                    className="w-full bg-[#0f172a] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59e0b] font-bold cursor-pointer"
                   >
-                    <option value="SMB4">SMB4</option>
-                    <option value="SMB1">SMB1</option>
-                    <option value="SMB2">SMB2</option>
-                    <option value="SMB3">SMB3</option>
-                    <option value="SMB5">SMB5</option>
-                    <option value="SMB6">SMB6</option>
-                    <option value="SMB7">SMB7</option>
-                    <option value="SMB8">SMB8</option>
-                    <option value="LIGA1">LIGA1</option>
-                    <option value="LIGA2">LIGA2</option>
-                    <option value="LIGA3">LIGA3</option>
-                    <option value="CUSTOM">✏️ Custom / Ketik Manual</option>
+                    <option value="SMB240" className="bg-[#0f172a] text-white font-bold">SMB240</option>
+                    <option value="SMB4" className="bg-[#0f172a] text-white font-bold">SMB4</option>
+                    <option value="SMB1" className="bg-[#0f172a] text-white font-bold">SMB1</option>
+                    <option value="SMB2" className="bg-[#0f172a] text-white font-bold">SMB2</option>
+                    <option value="SMB3" className="bg-[#0f172a] text-white font-bold">SMB3</option>
+                    <option value="SMB5" className="bg-[#0f172a] text-white font-bold">SMB5</option>
+                    <option value="SMB6" className="bg-[#0f172a] text-white font-bold">SMB6</option>
+                    <option value="SMB7" className="bg-[#0f172a] text-white font-bold">SMB7</option>
+                    <option value="SMB8" className="bg-[#0f172a] text-white font-bold">SMB8</option>
+                    <option value="LIGA1" className="bg-[#0f172a] text-white font-bold">LIGA1</option>
+                    <option value="LIGA2" className="bg-[#0f172a] text-white font-bold">LIGA2</option>
+                    <option value="LIGA3" className="bg-[#0f172a] text-white font-bold">LIGA3</option>
+                    <option value="CUSTOM" className="bg-[#0f172a] text-slate-300">✏️ Custom / Ketik Manual</option>
                   </select>
                   <input
                     type="text"
                     value={tokoText}
                     onChange={(e) => setTokoText(e.target.value)}
-                    className="w-full bg-[#060913] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50 font-semibold"
+                    className="w-full bg-[#0f172a] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59e0b] font-bold"
                     placeholder="Contoh: SMB4"
                   />
                 </div>
@@ -664,9 +682,9 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
               {/* Perihal Dropdown + Input */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-between">
-                  <span>Perihal Laporan</span>
-                  <span className="text-[9px] text-amber-400/80 font-normal">Pilih / Ketik</span>
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1 flex items-center justify-between">
+                  <span>PERIHAL LAPORAN</span>
+                  <span className="text-[9px] text-[#f59e0b] font-bold">PILIH / KETIK</span>
                 </label>
                 <div className="space-y-1.5">
                   <select
@@ -682,20 +700,20 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                       'Transaksi WD Pending Manual',
                       'Laporan Pending QRIS / E-Wallet'
                     ].includes(perihalText) ? perihalText : 'CUSTOM'}
-                    className="w-full bg-[#060913] border border-white/10 rounded-xl px-3 py-2 text-xs text-indigo-300 focus:outline-none focus:border-amber-500/50 font-semibold cursor-pointer"
+                    className="w-full bg-[#0f172a] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59e0b] font-bold cursor-pointer"
                   >
-                    <option value="Transaksi AutoWd Minera Pending">Transaksi AutoWd Minera Pending</option>
-                    <option value="Transaksi AutoWd PAY2ME Pending">Transaksi AutoWd PAY2ME Pending</option>
-                    <option value="Transaksi AutoWd WINPAY Pending">Transaksi AutoWd WINPAY Pending</option>
-                    <option value="Transaksi WD Pending Manual">Transaksi WD Pending Manual</option>
-                    <option value="Laporan Pending QRIS / E-Wallet">Laporan Pending QRIS / E-Wallet</option>
-                    <option value="CUSTOM">✏️ Custom / Ketik Manual</option>
+                    <option value="Transaksi AutoWd Minera Pending" className="bg-[#0f172a] text-white font-bold">Transaksi AutoWd Minera Pending</option>
+                    <option value="Transaksi AutoWd PAY2ME Pending" className="bg-[#0f172a] text-white font-bold">Transaksi AutoWd PAY2ME Pending</option>
+                    <option value="Transaksi AutoWd WINPAY Pending" className="bg-[#0f172a] text-white font-bold">Transaksi AutoWd WINPAY Pending</option>
+                    <option value="Transaksi WD Pending Manual" className="bg-[#0f172a] text-white font-bold">Transaksi WD Pending Manual</option>
+                    <option value="Laporan Pending QRIS / E-Wallet" className="bg-[#0f172a] text-white font-bold">Laporan Pending QRIS / E-Wallet</option>
+                    <option value="CUSTOM" className="bg-[#0f172a] text-slate-300">✏️ Custom / Ketik Manual</option>
                   </select>
                   <input
                     type="text"
                     value={perihalText}
                     onChange={(e) => setPerihalText(e.target.value)}
-                    className="w-full bg-[#060913] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50 font-semibold"
+                    className="w-full bg-[#0f172a] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59e0b] font-bold"
                     placeholder="Contoh: Transaksi AutoWd Minera Pending"
                   />
                 </div>
@@ -704,12 +722,12 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
             {/* Keterangan Template Dropdown + Textarea */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Pesan Keterangan
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                  PESAN KETERANGAN
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-400 font-medium">Pilih Template Keterangan:</span>
+                  <span className="text-[10px] text-[#f59e0b] font-bold">Pilih Template Keterangan:</span>
                   <select
                     onChange={(e) => {
                       const val = e.target.value;
@@ -725,14 +743,14 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                         setKeteranganText('');
                       }
                     }}
-                    className="bg-[#060913] border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-amber-300 focus:outline-none focus:border-amber-500 font-medium cursor-pointer"
+                    className="bg-[#0f172a] border border-amber-500/40 rounded-lg px-2.5 py-1 text-[11px] text-amber-300 focus:outline-none focus:border-[#f59e0b] font-bold cursor-pointer"
                   >
-                    <option value="">-- Pilih Dropdown Template Keterangan --</option>
-                    <option value="MINERA">📋 Template MINERA (Default)</option>
-                    <option value="PAY2ME">⚡ Template PAY2ME</option>
-                    <option value="WINPAY">💎 Template WINPAY</option>
-                    <option value="GANGGUAN">⚠️ Template Gangguan Perbankan</option>
-                    <option value="CLEAR">❌ Kosongkan Keterangan</option>
+                    <option value="" className="bg-[#0f172a] text-slate-300">-- Pilih Dropdown Template Keterangan --</option>
+                    <option value="MINERA" className="bg-[#0f172a] text-amber-300 font-bold">📋 Template MINERA (Default)</option>
+                    <option value="PAY2ME" className="bg-[#0f172a] text-amber-300 font-bold">⚡ Template PAY2ME</option>
+                    <option value="WINPAY" className="bg-[#0f172a] text-amber-300 font-bold">💎 Template WINPAY</option>
+                    <option value="GANGGUAN" className="bg-[#0f172a] text-amber-300 font-bold">⚠️ Template Gangguan Perbankan</option>
+                    <option value="CLEAR" className="bg-[#0f172a] text-rose-300">❌ Kosongkan Keterangan</option>
                   </select>
                 </div>
               </div>
@@ -740,15 +758,15 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                 value={keteranganText}
                 onChange={(e) => setKeteranganText(e.target.value)}
                 rows={3}
-                className="w-full bg-[#060913] border border-white/10 rounded-xl p-3 text-xs text-slate-300 focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none"
+                className="w-full bg-[#0f172a] border border-slate-600 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#f59e0b] leading-relaxed resize-none font-medium"
                 placeholder="Isi pesan keterangan untuk laporan..."
               />
             </div>
           </div>
 
           {/* Section 2: Raw Data Input Textarea / Separated Columns */}
-          <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-white/5 gap-3">
+          <div className="bg-[#0e172a] border border-slate-700/80 rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-700/80 gap-3">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-amber-400" />
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider">
@@ -760,7 +778,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                 <button
                   type="button"
                   onClick={handleLoadSample}
-                  className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/20 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-200 hover:bg-amber-500/30 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-sm"
                 >
                   <Sparkles className="h-3 w-3" />
                   <span>Isi Contoh Data</span>
@@ -769,7 +787,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                   <button
                     type="button"
                     onClick={handleClear}
-                    className="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-200 hover:bg-rose-500/30 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-sm"
                   >
                     <Trash2 className="h-3 w-3" />
                     <span>Kosongkan</span>
@@ -779,24 +797,25 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
             </div>
 
             {/* Input Mode Selector Tabs */}
-            <div className="flex items-center gap-2 p-1 bg-[#060913] rounded-xl border border-white/10">
+            <div className="flex items-center gap-2 p-1 bg-[#0f172a] rounded-xl border border-slate-700">
               <button
                 type="button"
                 onClick={() => setInputTab('table')}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
                   inputTab === 'table'
-                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    ? 'bg-[#f59e0b] text-slate-950 shadow-md font-black'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
+                <Zap className="h-3.5 w-3.5" />
                 <span>Tempel Tabel Sekaligus</span>
               </button>
               <button
                 type="button"
                 onClick={() => setInputTab('separated')}
-                className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
                   inputTab === 'separated'
-                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                    ? 'bg-[#f59e0b] text-slate-950 shadow-md font-black'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -806,60 +825,60 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
             {inputTab === 'table' ? (
               <div className="space-y-2">
-                <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                  Copy seluruh tabel dari admin / excel lalu paste langsung di bawah ini. Sistem akan otomatis mendeteksi <strong className="text-amber-300">User ID</strong>, <strong className="text-amber-300">Transfer Ref</strong>, dan <strong className="text-amber-300">Nominal</strong>!
+                <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
+                  Copy seluruh tabel dari admin / excel lalu paste langsung di bawah ini. Sistem akan otomatis mendeteksi <strong className="text-[#f59e0b] font-bold">User ID</strong>, <strong className="text-[#f59e0b] font-bold">Transfer Ref</strong>, dan <strong className="text-[#f59e0b] font-bold">Nominal</strong>!
                 </p>
 
                 <textarea
                   value={rawText}
                   onChange={(e) => setRawText(e.target.value)}
                   rows={8}
-                  className="w-full bg-[#060913] border border-white/10 rounded-xl p-3.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-amber-500/50 leading-relaxed resize-y"
+                  className="w-full bg-[#0f172a] border border-slate-600 rounded-xl p-3.5 text-xs font-mono text-white focus:outline-none focus:border-[#f59e0b] leading-relaxed resize-y placeholder:text-slate-400 font-medium"
                   placeholder={`Contoh tempel data sekaligus:\n1\tmomonita200\tChrismonita Agustin\t901906287056\tSEABANK\tLGBDT-MW971880\t200,000.00\n2\tningkan\tRusli\t6282184062274\tDANA\tLGBDT-MW970977\t50,000.00`}
                 />
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
                   Tempelkan masing-masing data secara terpisah per-baris pada 3 kotak di bawah ini (User ID, Transfer Ref/Order ID, Nominal):
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-[#f59e0b] uppercase tracking-widest mb-1">
                       1. User ID (List)
                     </label>
                     <textarea
                       value={rawUserIds}
                       onChange={(e) => setRawUserIds(e.target.value)}
                       rows={8}
-                      className="w-full bg-[#060913] border border-white/10 rounded-xl p-2.5 text-xs font-mono text-amber-200 focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none"
+                      className="w-full bg-[#0f172a] border border-slate-600 rounded-xl p-2.5 text-xs font-mono text-amber-200 focus:outline-none focus:border-[#f59e0b] leading-relaxed resize-none font-medium"
                       placeholder={`momonita200\nningkan\nrosidin33\nkajol06`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-1">
                       2. Transfer Ref / Order ID
                     </label>
                     <textarea
                       value={rawTransferRefs}
                       onChange={(e) => setRawTransferRefs(e.target.value)}
                       rows={8}
-                      className="w-full bg-[#060913] border border-white/10 rounded-xl p-2.5 text-xs font-mono text-indigo-200 focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none"
+                      className="w-full bg-[#0f172a] border border-slate-600 rounded-xl p-2.5 text-xs font-mono text-indigo-200 focus:outline-none focus:border-[#f59e0b] leading-relaxed resize-none font-medium"
                       placeholder={`LGBDT-MW971880\nLGBDT-MW970977\nLGBDT-MW970948\nLGBDT-MW970933`}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">
+                    <label className="block text-[10px] font-bold text-emerald-300 uppercase tracking-widest mb-1">
                       3. Nominal
                     </label>
                     <textarea
                       value={rawNominals}
                       onChange={(e) => setRawNominals(e.target.value)}
                       rows={8}
-                      className="w-full bg-[#060913] border border-white/10 rounded-xl p-2.5 text-xs font-mono text-emerald-200 focus:outline-none focus:border-amber-500/50 leading-relaxed resize-none"
+                      className="w-full bg-[#0f172a] border border-slate-600 rounded-xl p-2.5 text-xs font-mono text-emerald-200 focus:outline-none focus:border-[#f59e0b] leading-relaxed resize-none font-medium"
                       placeholder={`200,000.00\n50,000.00\n50,000.00\n251,000.00`}
                     />
                   </div>
@@ -868,38 +887,38 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
             )}
 
             <div className="flex items-center justify-between pt-2">
-              <span className="text-[11px] text-slate-400 font-mono">
+              <span className="text-[11px] text-slate-400 font-mono font-medium">
                 {items.length > 0 ? `Status: ${items.length} Data Terproses` : 'Siap memproses data'}
               </span>
 
               <button
                 type="button"
                 onClick={handleProcessInput}
-                className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 transition cursor-pointer flex items-center gap-2"
+                className="px-6 py-3 bg-[#f59e0b] hover:bg-amber-400 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition cursor-pointer flex items-center gap-2 border border-amber-400/50"
               >
-                <Zap className="h-4 w-4" />
-                <span>Proses & Susun Data</span>
+                <Zap className="h-4 w-4 fill-slate-950" />
+                <span>PROSES & SUSUN DATA</span>
               </button>
             </div>
           </div>
 
           {/* Section 3: Parsed Items Preview Table */}
           {items.length > 0 && (
-            <div className="bg-[#0b0f19] border border-white/10 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div className="bg-[#0e172a] border border-slate-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-700/80">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                     Hasil Ekstraksi Data ({items.length} User)
                   </h3>
                 </div>
-                <span className="text-xs font-black text-amber-400 font-mono">
-                  Total: Rp {totalNominal.toLocaleString('id-ID')}
+                <span className="text-xs font-black text-amber-300 font-mono bg-[#18233a] px-3 py-1 rounded-lg border border-slate-600">
+                  Total: Rp {formatCleanNominal('', totalNominal)}
                 </span>
               </div>
 
-              <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-xl border border-white/5">
+              <div className="overflow-x-auto max-h-72 overflow-y-auto rounded-xl border border-slate-700">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#060913] text-slate-400 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 border-b border-white/10">
+                  <thead className="bg-[#141f36] text-slate-200 font-bold uppercase tracking-wider text-[10px] sticky top-0 z-10 border-b border-slate-700">
                     <tr>
                       <th className="p-2.5 text-center w-10">No</th>
                       <th className="p-2.5">User ID</th>
@@ -909,19 +928,19 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                       <th className="p-2.5 text-center w-10">#</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 text-slate-300 font-mono text-[11px]">
+                  <tbody className="divide-y divide-slate-800 bg-[#0d1527] text-slate-200 font-mono text-[11px]">
                     {items.map((item, idx) => (
-                      <tr key={item.id} className="hover:bg-white/[0.02] transition">
-                        <td className="p-2.5 text-center text-slate-500 font-bold">{idx + 1}</td>
+                      <tr key={item.id} className="hover:bg-[#18243c] transition">
+                        <td className="p-2.5 text-center text-slate-400 font-bold">{idx + 1}</td>
                         <td className="p-2.5 font-bold text-amber-300">{item.userId}</td>
-                        <td className="p-2.5 text-slate-300">{item.bankName}</td>
+                        <td className="p-2.5 text-slate-200 font-semibold">{item.bankName}</td>
                         <td className="p-2.5 text-indigo-300 font-semibold">{item.transferRef}</td>
-                        <td className="p-2.5 text-right font-bold text-emerald-400">{item.nominal}</td>
+                        <td className="p-2.5 text-right font-bold text-emerald-400">{formatCleanNominal(item.nominal, item.nominalNum)}</td>
                         <td className="p-2.5 text-center">
                           <button
                             type="button"
                             onClick={() => handleDeleteItem(item.id)}
-                            className="text-slate-500 hover:text-rose-400 p-1 rounded transition"
+                            className="text-slate-400 hover:text-rose-400 p-1 rounded transition"
                             title="Hapus baris"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -940,10 +959,10 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
         {/* Right Column: Live Formatted Report & Action Buttons (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           
-          <div className="bg-[#0b0f19] border border-amber-500/20 rounded-2xl p-5 space-y-4 sticky top-24 shadow-2xl">
+          <div className="bg-[#0e172a] border border-amber-500/30 rounded-2xl p-5 space-y-4 sticky top-24">
             
             {/* Header with Copy Action */}
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700/80">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-400" />
                 <h3 className="text-xs font-extrabold text-white uppercase tracking-wider">
@@ -951,24 +970,24 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                 </h3>
               </div>
 
-              <span className="text-[10px] font-bold text-slate-400 uppercase">
+              <span className="text-[10px] font-bold text-slate-300 bg-[#18233a] px-2 py-0.5 rounded border border-slate-600 uppercase">
                 {items.length} Items
               </span>
             </div>
 
             {/* Layout Mode Selector */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+              <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-1.5">
                 Format Tampilan Laporan
               </label>
-              <div className="grid grid-cols-2 gap-1.5 bg-[#060913] p-1 rounded-xl border border-white/5">
+              <div className="grid grid-cols-2 gap-1.5 bg-[#18233a] p-1.5 rounded-xl border border-slate-600">
                 <button
                   type="button"
                   onClick={() => setFormatMode('itemized')}
                   className={`col-span-2 py-2 px-2.5 rounded-lg text-xs font-black uppercase transition cursor-pointer flex items-center justify-center gap-1.5 ${
                     formatMode === 'itemized' 
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20' 
-                      : 'bg-white/5 text-amber-300 hover:bg-white/10'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30' 
+                      : 'bg-slate-800/80 text-amber-300 hover:bg-slate-700'
                   }`}
                 >
                   <Sparkles className="h-3.5 w-3.5" />
@@ -979,8 +998,8 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                   onClick={() => setFormatMode('standard')}
                   className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase transition cursor-pointer ${
                     formatMode === 'standard' 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 font-black' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   Group List
@@ -990,8 +1009,8 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                   onClick={() => setFormatMode('numbered')}
                   className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase transition cursor-pointer ${
                     formatMode === 'numbered' 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 font-black' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   Penomoran (1, 2, 3)
@@ -1001,8 +1020,8 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                   onClick={() => setFormatMode('inline')}
                   className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase transition cursor-pointer ${
                     formatMode === 'inline' 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 font-black' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   Inline (Koma)
@@ -1012,8 +1031,8 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                   onClick={() => setFormatMode('detailed')}
                   className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase transition cursor-pointer ${
                     formatMode === 'detailed' 
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 font-black' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   Rincian Per-Row
@@ -1023,9 +1042,9 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
 
             {/* Preview Box */}
             <div className="relative group">
-              <pre className="w-full bg-[#060913] border border-white/10 rounded-xl p-4 text-xs font-mono text-slate-200 whitespace-pre-wrap break-words leading-relaxed max-h-[460px] overflow-y-auto selection:bg-amber-500/30">
+              <pre className="w-full bg-[#18233a] border border-slate-600 rounded-xl p-4 text-xs font-mono text-white whitespace-pre-wrap break-words leading-relaxed max-h-[460px] overflow-y-auto selection:bg-amber-500/40 shadow-inner">
                 {items.length > 0 ? formattedReportText : (
-                  <span className="text-slate-500 italic">
+                  <span className="text-slate-400 italic">
                     Tempel data transaksi WD pending di sebelah kiri untuk melihat pratinjau hasil susunan laporan di sini...
                   </span>
                 )}
@@ -1035,7 +1054,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="absolute top-3 right-3 p-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-lg backdrop-blur-md transition cursor-pointer"
+                  className="absolute top-3 right-3 p-2 bg-amber-500/30 hover:bg-amber-500/40 border border-amber-500/50 text-amber-200 rounded-lg backdrop-blur-md transition cursor-pointer shadow-md"
                   title="Salin Teks"
                 >
                   {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}

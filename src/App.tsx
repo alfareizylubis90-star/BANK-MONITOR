@@ -39,7 +39,9 @@ import {
   Activity,
   TrendingUp,
   Sparkles,
-  ShieldAlert
+  ShieldAlert,
+  QrCode,
+  DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bank, BankStatus, QrisRecord } from './types';
@@ -50,6 +52,8 @@ import DeleteConfirmModal from './components/DeleteConfirmModal';
 import HistoryPanel from './components/HistoryPanel';
 import AccessDenied from './components/AccessDenied';
 import { initAuth, googleSignIn, logout as googleLogout } from './lib/firebaseAuth';
+import logoImg from './assets/images/ligabandot_logo_1785220332925.jpg';
+import bgImg from './assets/images/bg_ligabandot_1785220966195.jpg';
 
 export default function App() {
   // Theme state ('dark' | 'light')
@@ -271,8 +275,9 @@ export default function App() {
     localStorage.setItem('bank_status_active_tab', activeTab);
   }, [activeTab]);
 
-  // Dashboard Dropdown state in sidebar
+  // Dashboard & Sistem/Laporan Dropdown states in sidebar
   const [isDashboardDropdownOpen, setIsDashboardDropdownOpen] = useState(true);
+  const [isSistemLaporanDropdownOpen, setIsSistemLaporanDropdownOpen] = useState(true);
 
   // Follow Up States
   const [rawFollowUpText, setRawFollowUpText] = useState(() => {
@@ -706,7 +711,7 @@ export default function App() {
     }
 
     const tabString = qrisRecords.map(r => {
-      return `${r.bank}\t${r.rekening}\t${r.nama}\t${r.nominal}`;
+      return `${r.bank}\t${r.rekening}\t${r.nama}\t${formatNominalDisplay(r.nominal)}`;
     }).join('\n');
 
     navigator.clipboard.writeText(tabString)
@@ -729,7 +734,7 @@ export default function App() {
     }
     let content = 'No\tJenis Bank\tNomor Rekening\tNama Rekening\tNominal Unik\tStatus\tTanggal\n';
     qrisRecords.forEach((r, idx) => {
-      content += `${idx + 1}\t${r.bank}\t'${r.rekening}\t${r.nama}\t${r.nominal}\t${r.status}\t${r.tanggal}\n`;
+      content += `${idx + 1}\t${r.bank}\t'${r.rekening}\t${r.nama}\t${formatNominalDisplay(r.nominal)}\t${r.status}\t${r.tanggal}\n`;
     });
 
     const blob = new Blob([content], { type: 'application/vnd.ms-excel;charset=utf-8' });
@@ -752,7 +757,7 @@ export default function App() {
     let content = 'No,Jenis Bank,Nomor Rekening,Nama Rekening,Nominal Unik,Status,Tanggal\n';
     qrisRecords.forEach((r, idx) => {
       const escapedName = r.nama.replace(/"/g, '""');
-      content += `${idx + 1},${r.bank},"${r.rekening}","${escapedName}",${r.nominal},${r.status},${r.tanggal}\n`;
+      content += `${idx + 1},${r.bank},"${r.rekening}","${escapedName}",${formatNominalDisplay(r.nominal)},${r.status},${r.tanggal}\n`;
     });
 
     const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
@@ -1496,6 +1501,20 @@ export default function App() {
     });
   };
 
+  // Helper to format nominal with COMMA thousand separators and NO decimals
+  const formatNominalDisplay = (val: number | string): string => {
+    if (val === undefined || val === null || val === '') return '0';
+    if (typeof val === 'number') {
+      return Math.floor(val).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    const cleanStr = val.toString().replace(/(\.00|,00)$/, '').replace(/,/g, '').replace(/\./g, '');
+    const parsed = parseInt(cleanStr, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    return val.toString().replace(/\./g, ',');
+  };
+
   const quickBanks = ['BCA', 'BNI', 'BRI', 'MANDIRI', 'CIMB', 'DANAMON', 'PERMATA', 'BTN', 'MAYBANK'];
 
   // === QRIS MINERA CACING MEMOIZED VALUES ===
@@ -1569,344 +1588,325 @@ export default function App() {
 
   const renderQrisSection = () => {
     return (
-      <div className="space-y-8" id="qris-module">
-        {/* Header Title Section */}
-        <div className="bg-gradient-to-r from-[#121124] to-[#1c183a] p-6 rounded-2xl border border-indigo-500/10 shadow-[0_4px_30px_rgba(99,102,241,0.05)]">
+      <div className="space-y-6" id="qris-module">
+        {/* HEADER SECTION */}
+        <div className="bg-[#1e293b] p-6 rounded-2xl border border-blue-500/30">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-              <span className="text-2xl">💸</span>
+            <div className="p-3 bg-blue-600 rounded-xl text-white shadow-md flex items-center justify-center shrink-0">
+              <QrCode className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2">
+              <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
                 Pencairan Saldo QRIS Minera Cacing
               </h2>
-              <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-                Kelola pencairan saldo QRIS Minera Cacing dengan sekali tempel data rekening. Sistem akan otomatis mengacak 3 digit nominal terakhir agar unik, mencegah duplikasi nominal transfer.
+              <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed font-normal">
+                Kelola pencairan saldo QRIS Minera Cacing dengan mudah dan real-time. Sistem data otomatis memproses & mencatat transaksi agar lebih transparan dan akurat kapan saja.
               </p>
             </div>
           </div>
         </div>
 
-        {/* Input & Parameters Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Area: Paste Data Account */}
-          <div className="lg:col-span-7 bg-[#0b0f19] p-6 rounded-2xl border border-white/[0.04] flex flex-col h-full justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3.5">
-                <label className="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
-                  📥 Sekali Tempel Rekening (TAB / Excel)
-                </label>
-                <span className="text-[10px] font-semibold text-slate-500">Format: Bank [TAB] Rekening [TAB] Nama</span>
-              </div>
-              <textarea
-                value={qrisPasteText}
-                onChange={(e) => setQrisPasteText(e.target.value)}
-                placeholder={`Contoh tempel langsung dari spreadsheet/excel:\nBCA\t6485684054\tSYAIFUL LUQMAN\nBCA\t2760231099\tNOVITASARI\nBCA\t4120398534\tILYAS SUKAMTO`}
-                rows={8}
-                className="w-full bg-[#050811] text-sm text-slate-200 p-4 rounded-xl border border-white/10 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 font-mono focus:outline-none transition-all placeholder:text-slate-600 resize-none"
-              />
+        {/* FORM INPUT SECTION */}
+        <div className="bg-[#1e293b] p-6 rounded-2xl border border-blue-500/30 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-blue-400" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                SEKALI TEMPEL REKENING (TAB / EXCEL)
+              </h3>
             </div>
-            <div className="mt-4.5">
+
+            <div className="flex items-center gap-3 flex-wrap">
               <button
-                onClick={handleImportQrisData}
-                disabled={isQrisSubmitting || !qrisPasteText.trim()}
-                className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider text-white transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer ${
-                  isQrisSubmitting || !qrisPasteText.trim()
-                    ? 'bg-indigo-600/40 text-indigo-300/60 border border-indigo-500/10 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border border-indigo-400/20 active:scale-[0.99] shadow-indigo-500/10'
-                }`}
+                type="button"
+                onClick={() => {
+                  setQrisPasteText(`BCA\t5242527474\tSuryati\nBCA\t5888642367\tI KADER AGUS SULEMRA\nBCA\t5420472355\tAHMAD MIOITBIOL VH\nBCA\t5311454575\tJUMLAH\nBCA\t4901307966\tSYAEPUL IMAM`);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 shadow-sm"
               >
-                {isQrisSubmitting ? (
-                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-white" />
-                ) : (
-                  <span>📥 Tempel & Simpan Data Rekening</span>
-                )}
+                <Sparkles className="h-3.5 w-3.5 text-blue-400" />
+                <span>Contoh Tempel</span>
               </button>
+              <span className="text-xs text-slate-300 font-medium">
+                Format: Bank [TAB] Rekening [TAB] Nama
+              </span>
             </div>
           </div>
 
-          {/* Right Area: Configurations & Presets */}
-          <div className="lg:col-span-5 bg-[#0b0f19] p-6 rounded-2xl border border-white/[0.04] flex flex-col justify-between">
-            <div>
-              <label className="text-xs font-bold text-indigo-400 uppercase tracking-widest block mb-3.5">
-                ⚙️ Pengaturan Nominal Dasar
-              </label>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="relative">
-                    <span className="absolute left-4.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">Rp</span>
-                    <input
-                      type="text"
-                      value={qrisBaseNominal}
-                      onChange={(e) => {
-                        const clean = e.target.value.replace(/[^0-9]/g, '');
-                        setQrisBaseNominal(clean);
-                      }}
-                      className="w-full bg-[#050811] text-base font-bold text-slate-100 pl-11 pr-4 py-3 rounded-xl border border-white/10 focus:border-indigo-500 focus:outline-none transition-all"
-                    />
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5 leading-relaxed">
-                    Nominal dasar pencairan. Sistem otomatis mengganti 3 digit terakhir menjadi angka acak unik (001 - 999).
-                  </p>
-                </div>
+          <textarea
+            value={qrisPasteText}
+            onChange={(e) => setQrisPasteText(e.target.value)}
+            placeholder={`Contoh sekali tempel dari Excel / Spreadsheet:\nBCA\t5242527474\tSuryati\nBCA\t5888642367\tI KADER AGUS SULEMRA\nBCA\t5420472355\tAHMAD MIOITBIOL VH\nBCA\t5311454575\tJUMLAH\nBCA\t4901307966\tSYAEPUL IMAM`}
+            rows={7}
+            className="w-full bg-[#0f172a] text-sm text-white p-4 rounded-xl border border-blue-500/50 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/40 font-mono focus:outline-none transition-all placeholder:text-slate-400 resize-none font-medium"
+          />
 
-                {/* Quick Presets */}
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Preset Nominal Cepat:</span>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { label: '10 JT', val: '10000000' },
-                      { label: '5 JT', val: '5000000' },
-                      { label: '2.5 JT', val: '2500000' },
-                      { label: '1 JT', val: '1000000' }
-                    ].map((preset) => (
-                      <button
-                        key={preset.label}
-                        onClick={() => setQrisBaseNominal(preset.val)}
-                        className={`py-2 px-3 text-[10px] font-extrabold rounded-lg border transition-all cursor-pointer ${
-                          qrisBaseNominal === preset.val
-                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.15)]'
-                            : 'bg-white/5 text-slate-400 hover:bg-white/10 border-white/5'
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Config Control Buttons */}
-            <div className="mt-6 space-y-2.5 pt-4.5 border-t border-white/[0.04]">
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  onClick={handleRegenerateNominals}
-                  disabled={qrisRecords.length === 0 || isQrisSubmitting}
-                  className="py-2.5 px-3 bg-gradient-to-r from-indigo-600/10 to-purple-600/10 hover:from-indigo-600/20 hover:to-purple-600/20 text-indigo-300 border border-indigo-500/20 hover:border-indigo-500/30 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span>🔄 Generate Ulang Suffix</span>
-                </button>
-
-                <button
-                  onClick={handleResetNominals}
-                  disabled={qrisRecords.length === 0 || isQrisSubmitting}
-                  className="py-2.5 px-3 bg-slate-900/40 hover:bg-slate-800/60 text-slate-300 border border-white/10 hover:border-white/20 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span>⚠️ Reset Nominal</span>
-                </button>
-              </div>
-
-              <button
-                onClick={handleClearAllQris}
-                disabled={qrisRecords.length === 0 || isQrisSubmitting}
-                className="w-full py-2.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/30 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-rose-400" />
-                <span>Kosongkan Seluruh Data</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Real-time Statistics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Card 1: Total Rekening */}
-          <div className="bg-[#0b0f19] p-4.5 rounded-2xl border border-white/[0.04] shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 h-16 w-16 bg-blue-500/5 rounded-bl-full transition-all group-hover:scale-110" />
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Rekening</p>
-            <p className="text-xl font-black text-white mt-1">{qrisStats.totalCount} <span className="text-xs font-normal text-slate-400">rekening</span></p>
-          </div>
-
-          {/* Card 2: Total Nominal */}
-          <div className="bg-[#0b0f19] p-4.5 rounded-2xl border border-white/[0.04] shadow-sm relative overflow-hidden group col-span-2 sm:col-span-1">
-            <div className="absolute top-0 right-0 h-16 w-16 bg-emerald-500/5 rounded-bl-full transition-all group-hover:scale-110" />
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Nominal</p>
-            <p className="text-base font-black text-emerald-400 mt-1.5 truncate">
-              {qrisStats.totalNominal}
-            </p>
-          </div>
-
-          {/* Card 3: Bank Terbanyak */}
-          <div className="bg-[#0b0f19] p-4.5 rounded-2xl border border-white/[0.04] shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 h-16 w-16 bg-purple-500/5 rounded-bl-full transition-all group-hover:scale-110" />
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bank Terbanyak</p>
-            <p className="text-sm font-bold text-indigo-300 mt-2 truncate">
-              {qrisStats.mostFrequentBank}
-            </p>
-          </div>
-
-          {/* Card 4: Nominal Tertinggi */}
-          <div className="bg-[#0b0f19] p-4.5 rounded-2xl border border-white/[0.04] shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 h-16 w-16 bg-indigo-500/5 rounded-bl-full transition-all group-hover:scale-110" />
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tertinggi (Max)</p>
-            <p className="text-sm font-bold text-indigo-200 mt-2 truncate">
-              {qrisStats.highestNominal}
-            </p>
-          </div>
-
-          {/* Card 5: Nominal Terendah */}
-          <div className="bg-[#0b0f19] p-4.5 rounded-2xl border border-white/[0.04] shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 right-0 h-16 w-16 bg-rose-500/5 rounded-bl-full transition-all group-hover:scale-110" />
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Terendah (Min)</p>
-            <p className="text-sm font-bold text-rose-300 mt-2 truncate">
-              {qrisStats.lowestNominal}
-            </p>
-          </div>
-        </div>
-
-        {/* Table Operations Block (Search + Filters + Buttons) */}
-        <div className="bg-[#0b0f19] rounded-2xl border border-white/[0.04] overflow-hidden shadow-xl">
-          <div className="p-5 border-b border-white/[0.04] space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              {/* Search input bar */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          {/* Configuration & Action Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider whitespace-nowrap">Nominal Dasar:</span>
+              <div className="relative max-w-[180px]">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
                 <input
                   type="text"
-                  value={qrisSearchQuery}
-                  onChange={(e) => setQrisSearchQuery(e.target.value)}
-                  placeholder="Cari nama, rekening, atau nominal..."
-                  className="w-full bg-[#050811] text-xs text-slate-200 pl-10 pr-4 py-2.5 rounded-xl border border-white/10 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all placeholder:text-slate-600"
+                  value={qrisBaseNominal ? formatNominalDisplay(qrisBaseNominal) : ''}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/[^0-9]/g, '');
+                    setQrisBaseNominal(clean);
+                  }}
+                  placeholder="10,000,000"
+                  className="w-full bg-[#0f172a] text-sm font-bold text-white pl-9 pr-3 py-2 rounded-xl border border-blue-500/50 focus:border-blue-400 focus:outline-none"
                 />
               </div>
-
-              {/* Action Group Buttons */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={handleCopyQrisAll}
-                  disabled={filteredQrisRecords.length === 0}
-                  className="flex items-center gap-1.5 py-2 px-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider border border-blue-400/20 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isCopiedQrisAll ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
-                      <span>Tersalin!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5 text-blue-200" />
-                      <span>Salin Semua</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={handleExportQrisExcel}
-                  disabled={filteredQrisRecords.length === 0}
-                  className="flex items-center gap-1.5 py-2 px-3.5 bg-[#121c2c] hover:bg-[#1a2b44] text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider border border-white/5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FileText className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Excel</span>
-                </button>
-
-                <button
-                  onClick={handleExportQrisCsv}
-                  disabled={filteredQrisRecords.length === 0}
-                  className="flex items-center gap-1.5 py-2 px-3.5 bg-[#121c2c] hover:bg-[#1a2b44] text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider border border-white/5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FileText className="h-3.5 w-3.5 text-blue-400" />
-                  <span>CSV</span>
-                </button>
-
-                <button
-                  onClick={handlePrintQris}
-                  disabled={filteredQrisRecords.length === 0}
-                  className="flex items-center gap-1.5 py-2 px-3.5 bg-[#121c2c] hover:bg-[#1a2b44] text-slate-300 rounded-xl text-xs font-bold uppercase tracking-wider border border-white/5 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="text-xs">🖨️</span>
-                  <span>Print</span>
-                </button>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[
+                  { label: '10 JT', val: '10000000' },
+                  { label: '5 JT', val: '5000000' },
+                  { label: '2.5 JT', val: '2500000' },
+                  { label: '1 JT', val: '1000000' }
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setQrisBaseNominal(preset.val)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition ${
+                      qrisBaseNominal === preset.val
+                        ? 'bg-blue-600 text-white border-blue-400'
+                        : 'bg-[#0f172a] text-slate-300 border-slate-700 hover:bg-slate-800'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Bank Category tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-              {['Semua', 'BCA', 'BRI', 'BNI', 'MANDIRI', 'CIMB', 'Lainnya'].map((b) => (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRegenerateNominals}
+                disabled={qrisRecords.length === 0 || isQrisSubmitting}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                🔄 Generate Suffix
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAllQris}
+                disabled={qrisRecords.length === 0 || isQrisSubmitting}
+                className="px-3.5 py-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 font-bold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Kosongkan Data
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={handleImportQrisData}
+            disabled={isQrisSubmitting || !qrisPasteText.trim()}
+            className={`w-full py-3.5 px-4 rounded-xl font-extrabold text-sm uppercase tracking-wider text-white transition cursor-pointer flex items-center justify-center gap-2 shadow-lg ${
+              isQrisSubmitting || !qrisPasteText.trim()
+                ? 'bg-blue-600/40 text-blue-200/50 cursor-not-allowed border border-blue-500/20'
+                : 'bg-blue-600 hover:bg-blue-500 border border-blue-400 active:scale-[0.99]'
+            }`}
+          >
+            {isQrisSubmitting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white" />
+            ) : (
+              <span>TEMPEL & SIMPAN DATA REKENING</span>
+            )}
+          </button>
+        </div>
+
+        {/* SUMMARY CARDS SECTION */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: TOTAL REKENING */}
+          <div className="bg-[#1e293b] p-5 rounded-2xl border border-blue-500/30 flex items-center justify-between shadow-sm">
+            <div>
+              <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">TOTAL REKENING</p>
+              <p className="text-2xl font-black text-white mt-1">
+                {qrisStats.totalCount} <span className="text-sm font-semibold text-slate-400">Rekening</span>
+              </p>
+            </div>
+            <div className="p-3.5 bg-blue-600/20 border border-blue-500/40 rounded-xl text-blue-400">
+              <CreditCard className="h-6 w-6" />
+            </div>
+          </div>
+
+          {/* Card 2: TOTAL NOMINAL */}
+          <div className="bg-[#1e293b] p-5 rounded-2xl border border-blue-500/30 flex items-center justify-between shadow-sm">
+            <div>
+              <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">TOTAL NOMINAL</p>
+              <p className="text-2xl font-black text-emerald-400 mt-1">
+                Rp {formatNominalDisplay(qrisStats.totalNominal)}
+              </p>
+            </div>
+            <div className="p-3.5 bg-emerald-600/20 border border-emerald-500/40 rounded-xl text-emerald-400">
+              <DollarSign className="h-6 w-6" />
+            </div>
+          </div>
+
+          {/* Card 3: BANK TERBANYAK */}
+          <div className="bg-[#1e293b] p-5 rounded-2xl border border-blue-500/30 flex items-center justify-between shadow-sm">
+            <div>
+              <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">BANK TERBANYAK</p>
+              <p className="text-xl font-bold text-amber-400 mt-1 truncate max-w-[200px]">
+                {qrisStats.mostFrequentBank}
+              </p>
+            </div>
+            <div className="p-3.5 bg-amber-600/20 border border-amber-500/40 rounded-xl text-amber-400">
+              <Building2 className="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+
+        {/* SEARCH & FILTER SECTION */}
+        <div className="bg-[#1e293b] p-5 rounded-2xl border border-blue-500/30 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Search bar */}
+            <div className="relative flex-1 max-w-lg">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={qrisSearchQuery}
+                onChange={(e) => setQrisSearchQuery(e.target.value)}
+                placeholder="Cari nama, rekening, atau nominal..."
+                className="w-full bg-[#0f172a] text-sm text-white pl-10 pr-4 py-2.5 rounded-xl border border-blue-500/50 focus:border-blue-400 focus:outline-none placeholder:text-slate-400 font-medium"
+              />
+            </div>
+
+            {/* Action Group Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleCopyQrisAll}
+                disabled={filteredQrisRecords.length === 0}
+                className="flex items-center gap-1.5 py-2 px-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+              >
+                {isCopiedQrisAll ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                <span>Salin Semua</span>
+              </button>
+
+              <button
+                onClick={handleExportQrisExcel}
+                disabled={filteredQrisRecords.length === 0}
+                className="flex items-center gap-1.5 py-2 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+              >
+                <FileText className="h-3.5 w-3.5 text-emerald-400" />
+                <span>Excel</span>
+              </button>
+
+              <button
+                onClick={handleExportQrisCsv}
+                disabled={filteredQrisRecords.length === 0}
+                className="flex items-center gap-1.5 py-2 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+              >
+                <FileText className="h-3.5 w-3.5 text-blue-400" />
+                <span>CSV</span>
+              </button>
+
+              <button
+                onClick={handlePrintQris}
+                disabled={filteredQrisRecords.length === 0}
+                className="flex items-center gap-1.5 py-2 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+              >
+                <span>🖨️ Print</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Categories: SEMUA, BCA, BRI, BNI, MANDIRI, CIMB, LAINNYA */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+            {['SEMUA', 'BCA', 'BRI', 'BNI', 'MANDIRI', 'CIMB', 'LAINNYA'].map((b) => {
+              const active = (qrisSelectedBank === 'Semua' && b === 'SEMUA') ||
+                             (qrisSelectedBank === 'Lainnya' && b === 'LAINNYA') ||
+                             (qrisSelectedBank.toUpperCase() === b);
+              return (
                 <button
                   key={b}
-                  onClick={() => setQrisSelectedBank(b)}
-                  className={`px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-lg border transition-all cursor-pointer whitespace-nowrap ${
-                    qrisSelectedBank === b
-                      ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30'
-                      : 'bg-white/5 text-slate-400 hover:bg-white/10 border-white/5'
+                  onClick={() => {
+                    if (b === 'SEMUA') setQrisSelectedBank('Semua');
+                    else if (b === 'LAINNYA') setQrisSelectedBank('Lainnya');
+                    else setQrisSelectedBank(b);
+                  }}
+                  className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl border transition cursor-pointer whitespace-nowrap ${
+                    active
+                      ? 'bg-blue-600 text-white border-blue-400 shadow-md'
+                      : 'bg-[#0f172a] text-slate-300 hover:bg-slate-800 border-slate-700'
                   }`}
                 >
                   {b}
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
+        </div>
 
-          {/* Results Table Section */}
-          <div className="overflow-x-auto scrollbar-thin max-h-[500px] overflow-y-auto">
+        {/* DATA TABLE SECTION */}
+        <div className="bg-[#1e293b] rounded-2xl border border-blue-500/30 overflow-hidden">
+          <div className="overflow-x-auto scrollbar-thin max-h-[550px] overflow-y-auto">
             {isQrisLoading ? (
               <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Memuat database QRIS...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">Memuat database QRIS...</p>
               </div>
             ) : filteredQrisRecords.length === 0 ? (
-              <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
-                <span className="text-3xl opacity-40">📊</span>
-                <p className="text-xs font-semibold">Tidak ada data rekening QRIS dalam filter ini.</p>
-                <p className="text-[10px] text-slate-600">Tempel data di atas untuk memulai.</p>
+              <div className="py-16 text-center text-slate-300 flex flex-col items-center justify-center gap-2">
+                <span className="text-3xl">📊</span>
+                <p className="text-sm font-bold text-white">Tidak ada data rekening QRIS dalam filter ini.</p>
+                <p className="text-xs text-slate-400">Tempel data pada form di atas untuk menambahkan data transaksi.</p>
               </div>
             ) : (
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#050811] text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-white/[0.04] sticky top-0 z-10">
-                    <th className="py-4.5 px-5 text-center w-16">No</th>
-                    <th className="py-4.5 px-4">Jenis Bank</th>
-                    <th className="py-4.5 px-4">Nomor Rekening</th>
-                    <th className="py-4.5 px-4">Nama Rekening</th>
-                    <th className="py-4.5 px-4 text-right">Nominal Pencairan</th>
-                    <th className="py-4.5 px-4 text-center">Status</th>
-                    <th className="py-4.5 px-5 text-center">Aksi</th>
+                  <tr className="bg-[#0f172a] text-xs font-bold uppercase tracking-wider text-slate-200 border-b border-slate-700 sticky top-0 z-10">
+                    <th className="py-4 px-5 text-center w-16">No</th>
+                    <th className="py-4 px-4">Bank</th>
+                    <th className="py-4 px-4">Nomor Rekening</th>
+                    <th className="py-4 px-4">Nama Rekening</th>
+                    <th className="py-4 px-4 text-right">Nominal</th>
+                    <th className="py-4 px-4 text-center">Status</th>
+                    <th className="py-4 px-5 text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.02]">
+                <tbody className="divide-y divide-slate-800 bg-[#131e36]">
                   {filteredQrisRecords.map((r, idx) => {
                     const isDuplicated = qrisDuplicateRekenings.has(r.rekening);
                     return (
                       <tr
                         key={r.id}
-                        className={`hover:bg-white/[0.01] transition-all text-xs font-medium text-slate-300 ${
-                          isDuplicated ? 'bg-amber-950/5 hover:bg-amber-950/10' : ''
+                        className={`hover:bg-[#1a2948] transition text-sm font-medium text-white ${
+                          isDuplicated ? 'bg-amber-950/30 hover:bg-amber-950/40' : ''
                         }`}
                       >
-                        <td className="py-3.5 px-5 text-center text-slate-500 font-mono">{idx + 1}</td>
+                        <td className="py-3.5 px-5 text-center text-slate-400 font-mono font-bold">{idx + 1}</td>
                         <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center gap-1.5 font-bold text-slate-100">
-                            <span className="text-indigo-400">⚡</span>
-                            {r.bank}
-                          </span>
+                          <span className="font-bold text-blue-400 uppercase">{r.bank}</span>
                         </td>
-                        <td className="py-3.5 px-4 font-mono select-all text-slate-200">
+                        <td className="py-3.5 px-4 font-mono select-all text-white font-semibold">
                           {r.rekening}
                           {isDuplicated && (
-                            <span className="ml-2.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 text-[9px] font-extrabold border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.1)]">
+                            <span className="ml-2.5 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/40">
                               ⚠️ GANDA
                             </span>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 uppercase font-bold text-slate-100">{r.nama}</td>
-                        <td className="py-3.5 px-4 text-right font-mono text-indigo-300 font-black text-sm select-all">
-                          {r.nominal}
+                        <td className="py-3.5 px-4 uppercase font-bold text-white">{r.nama}</td>
+                        <td className="py-3.5 px-4 text-right font-mono text-emerald-400 font-bold select-all">
+                          Rp {formatNominalDisplay(r.nominal)}
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-extrabold uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                            <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase bg-blue-600/20 text-blue-300 border border-blue-500/40">
+                            <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse" />
                             {r.status}
                           </span>
                         </td>
                         <td className="py-3.5 px-5 text-center">
                           <button
                             onClick={() => handleDeleteQrisRecord(r.id)}
-                            className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/10 hover:border-rose-500/20 rounded-lg text-rose-400 transition-all cursor-pointer active:scale-90"
+                            className="p-1.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 rounded-lg text-rose-300 transition cursor-pointer"
                             title="Hapus Baris"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </td>
                       </tr>
@@ -1926,12 +1926,24 @@ export default function App() {
     { 
       id: 'monitor', 
       name: 'Dashboard Utama', 
+      icon: BarChart3,
+      action: () => {
+        setActiveTab('monitor');
+        setShowOnlyBermasalah(false);
+        setDashboardViewMode('grafik');
+      },
+      isActive: activeTab === 'monitor' && !showOnlyBermasalah && dashboardViewMode === 'grafik'
+    },
+    { 
+      id: 'daftar_rekening', 
+      name: 'Daftar Rekening', 
       icon: LayoutList,
       action: () => {
         setActiveTab('monitor');
         setShowOnlyBermasalah(false);
+        setDashboardViewMode('daftar');
       },
-      isActive: activeTab === 'monitor' && !showOnlyBermasalah
+      isActive: activeTab === 'monitor' && !showOnlyBermasalah && dashboardViewMode === 'daftar'
     },
     { 
       id: 'bermasalah', 
@@ -1944,6 +1956,7 @@ export default function App() {
       action: () => {
         setActiveTab('monitor');
         setShowOnlyBermasalah(true);
+        setDashboardViewMode('daftar');
       },
       isActive: activeTab === 'monitor' && showOnlyBermasalah
     },
@@ -1957,6 +1970,17 @@ export default function App() {
         setActiveTab('pending_wd');
       },
       isActive: activeTab === 'pending_wd'
+    },
+    { 
+      id: 'qris_minera', 
+      name: 'Pencairan QRIS Minera', 
+      icon: QrCode,
+      badge: qrisRecords.length > 0 ? `${qrisRecords.length}` : 'NEW',
+      badgeColor: 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30',
+      action: () => {
+        setActiveTab('qris');
+      },
+      isActive: activeTab === 'qris'
     }
   ];
 
@@ -1969,7 +1993,7 @@ export default function App() {
 
   // Render Sidebar Navigation with Dashboard Dropdown Accordion
   const renderSidebarNav = (isMobile: boolean = false) => {
-    const isDashboardActiveGroup = ['monitor', 'pending_wd'].includes(activeTab);
+    const isDashboardActiveGroup = ['monitor', 'pending_wd', 'qris'].includes(activeTab);
 
     return (
       <nav className="flex-1 px-3 py-5 space-y-2 overflow-y-auto">
@@ -2042,38 +2066,68 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        {/* Separator */}
-        <div className="pt-3 pb-1">
-          <div className="h-px bg-white/10 mx-2" />
-          <span className="text-[9px] font-mono font-bold text-slate-500 tracking-widest uppercase px-3 pt-2 block">
-            SISTEM & LAPORAN
-          </span>
-        </div>
+        {/* SISTEM & LAPORAN DROPDOWN */}
+        <div className="pt-2 space-y-1">
+          <button
+            type="button"
+            onClick={() => setIsSistemLaporanDropdownOpen(!isSistemLaporanDropdownOpen)}
+            className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+              ['followup', 'history', 'settings'].includes(activeTab)
+                ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/10 text-blue-300 border border-blue-500/30 shadow-md'
+                : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <FileText className="h-4 w-4 text-blue-400 shrink-0" />
+              <span>SISTEM & LAPORAN</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-extrabold border border-blue-500/30">
+                {otherMenuItems.length} MENU
+              </span>
+              {isSistemLaporanDropdownOpen ? (
+                <ChevronDown className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+              )}
+            </div>
+          </button>
 
-        {/* OTHER MENU ITEMS */}
-        <div className="space-y-1">
-          {otherMenuItems.map((item) => {
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  item.action();
-                  if (isMobile) setIsMobileSidebarOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                  item.isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/10'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
+          {/* Submenu Dropdown Items */}
+          <AnimatePresence initial={false}>
+            {isSistemLaporanDropdownOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden pl-2.5 space-y-1 border-l-2 border-blue-500/30 ml-4 my-1.5"
               >
-                <div className="flex items-center gap-3">
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  <span>{item.name}</span>
-                </div>
-              </button>
-            );
-          })}
+                {otherMenuItems.map((item) => {
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        item.action();
+                        if (isMobile) setIsMobileSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+                        item.isActive
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 font-extrabold'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <item.icon className={`h-3.5 w-3.5 shrink-0 ${item.isActive ? 'text-white' : 'text-slate-400'}`} />
+                        <span>{item.name}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </nav>
     );
@@ -2789,23 +2843,8 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans antialiased selection:bg-blue-500/30 selection:text-white flex flex-col lg:flex-row relative ${
-      theme === 'dark' ? 'bg-[#060B16] text-slate-100 cyber-grid' : 'bg-slate-50 text-slate-800'
+      theme === 'dark' ? 'bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-800'
     }`}>
-      {/* Premium Cyberpunk Ambient Decorative Elements */}
-      {theme === 'dark' && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-          {/* Holographic glowing colors */}
-          <div className="absolute -top-[10%] -left-[5%] w-[50%] h-[50%] rounded-full bg-gradient-to-br from-blue-600/10 to-transparent blur-[120px] animate-float-1" />
-          <div className="absolute -bottom-[10%] -right-[5%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-purple-600/8 to-transparent blur-[110px] animate-float-2" />
-          <div className="absolute top-[30%] left-[30%] w-[300px] h-[300px] rounded-full bg-cyan-500/3 blur-[90px]" />
-          
-          {/* Digital particles */}
-          <div className="absolute top-[12%] left-[18%] h-1 w-1 rounded-full bg-blue-400/40 animate-ping" />
-          <div className="absolute top-[48%] left-[72%] h-1.5 w-1.5 rounded-full bg-cyan-400/30 animate-pulse" />
-          <div className="absolute top-[78%] left-[12%] h-1 w-1 rounded-full bg-purple-400/40 animate-pulse" />
-          <div className="absolute top-[58%] left-[48%] h-2 w-2 rounded-full bg-[#D4AF37]/20 animate-ping" />
-        </div>
-      )}
       {/* Toast Notification Container */}
       <AnimatePresence>
         {toast && (
@@ -2841,14 +2880,22 @@ export default function App() {
       {/* Sidebar (Desktop) */}
       <aside className="hidden lg:flex flex-col w-64 bg-[#09090B] border-r border-amber-500/10 h-screen sticky top-0 shrink-0 z-40 text-slate-100 shadow-xl">
         {/* Logo Section */}
-        <div className="flex flex-col items-center justify-center pt-6 px-4 pb-5 border-b border-amber-500/20 relative group">
-          <div className="py-2 text-center">
-            <span className="text-xl font-extrabold tracking-[0.15em] text-[#D4AF37] block font-sans">
-              LIGABANDOT
-            </span>
-            <span className="text-[9px] text-slate-400 font-bold font-mono tracking-widest uppercase mt-1.5 block">
-              BANK MONITOR SYSTEM
-            </span>
+        <div className="flex flex-col items-center justify-center pt-5 px-4 pb-5 border-b border-amber-500/20 relative group">
+          <div className="flex items-center gap-3 py-1">
+            <img 
+              src={logoImg} 
+              alt="Kapten Liga Bandot Logo" 
+              referrerPolicy="no-referrer"
+              className="h-11 w-11 rounded-full object-cover border-2 border-[#D4AF37] shadow-lg shadow-amber-500/20 shrink-0 group-hover:scale-105 transition-transform duration-300"
+            />
+            <div className="text-left">
+              <span className="text-lg font-extrabold tracking-[0.12em] text-[#D4AF37] block font-sans leading-tight">
+                LIGABANDOT
+              </span>
+              <span className="text-[8px] text-slate-400 font-bold font-mono tracking-widest uppercase mt-1 block">
+                BANK MONITOR SYSTEM
+              </span>
+            </div>
           </div>
           {/* Golden line below logo */}
           <div className="absolute bottom-0 left-4 right-4 h-px bg-[#D4AF37]" />
@@ -2887,14 +2934,22 @@ export default function App() {
             className="fixed inset-y-0 left-0 w-64 bg-[#09090B] border-r border-amber-500/10 z-50 flex flex-col lg:hidden shadow-2xl text-slate-100"
           >
             {/* Logo Section */}
-            <div className="flex flex-col items-center justify-center pt-6 px-4 pb-5 border-b border-amber-500/20 relative group">
-              <div className="py-2 text-center">
-                <span className="text-xl font-extrabold tracking-[0.15em] text-[#D4AF37] block font-sans">
-                  LIGABANDOT
-                </span>
-                <span className="text-[9px] text-slate-400 font-bold font-mono tracking-widest uppercase mt-1.5 block">
-                  BANK MONITOR SYSTEM
-                </span>
+            <div className="flex flex-col items-center justify-center pt-5 px-4 pb-5 border-b border-amber-500/20 relative group">
+              <div className="flex items-center gap-3 py-1 pr-6">
+                <img 
+                  src={logoImg} 
+                  alt="Kapten Liga Bandot Logo" 
+                  referrerPolicy="no-referrer"
+                  className="h-10 w-10 rounded-full object-cover border-2 border-[#D4AF37] shadow-lg shadow-amber-500/20 shrink-0"
+                />
+                <div className="text-left">
+                  <span className="text-lg font-extrabold tracking-[0.12em] text-[#D4AF37] block font-sans leading-tight">
+                    LIGABANDOT
+                  </span>
+                  <span className="text-[8px] text-slate-400 font-bold font-mono tracking-widest uppercase mt-1 block">
+                    BANK MONITOR SYSTEM
+                  </span>
+                </div>
               </div>
               <button 
                 onClick={() => setIsMobileSidebarOpen(false)}
@@ -2946,7 +3001,13 @@ export default function App() {
                 <h1 className={`text-sm sm:text-base font-extrabold tracking-tight uppercase flex items-center gap-2 ${
                   theme === 'dark' ? 'text-white' : 'text-slate-900'
                 }`}>
-                  {activeTab === 'monitor' && (showOnlyBermasalah ? 'Rekening Bermasalah' : 'Dashboard Utama')}
+                  {activeTab === 'monitor' && (
+                    showOnlyBermasalah 
+                      ? 'Rekening Bermasalah' 
+                      : dashboardViewMode === 'grafik' 
+                        ? 'Dashboard Utama (Analisis Grafik)' 
+                        : 'Daftar Rekening Bank'
+                  )}
                   {activeTab === 'qris' && 'Pencairan QRIS'}
                   {activeTab === 'pending_wd' && 'Laporan WD Pending (Minera & Pay2Me)'}
                   {activeTab === 'followup' && 'Laporan Follow Up'}
@@ -2962,6 +3023,20 @@ export default function App() {
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-3">
+            {/* Quick Header Shortcut to QRIS Minera */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('qris')}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer shadow-md ${
+                activeTab === 'qris'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border border-indigo-400/30 shadow-indigo-500/20'
+                  : 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-600/30'
+              }`}
+            >
+              <QrCode className="h-3.5 w-3.5 text-indigo-400" />
+              <span>QRIS Minera</span>
+            </button>
+
             {/* Database sync indicator */}
             {dbStatus && (
               <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-900/40 border border-emerald-500/10 text-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.04)]">
@@ -3015,10 +3090,10 @@ export default function App() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 
                 {/* AMAN card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.02] shadow-xl group cursor-pointer relative overflow-hidden ${
+                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
                   theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/80 to-[#070b16]/90 border-emerald-500/10 hover:border-emerald-500/40 hover:shadow-emerald-950/20 animate-neon-green' 
-                    : 'bg-white border-slate-200 hover:border-emerald-300 shadow-md'
+                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-emerald-500/20 hover:border-emerald-500/40 animate-neon-green' 
+                    : 'bg-white border-slate-200 hover:border-emerald-300'
                 }`}>
                   <div className="flex items-center gap-3.5 z-10">
                     <div className={`p-3 rounded-xl border ${
@@ -3045,10 +3120,10 @@ export default function App() {
                 </div>
 
                 {/* RTP card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.02] shadow-xl group cursor-pointer relative overflow-hidden ${
+                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
                   theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/80 to-[#070b16]/90 border-amber-500/10 hover:border-amber-500/40 hover:shadow-amber-950/20 animate-neon-yellow' 
-                    : 'bg-white border-slate-200 hover:border-amber-300 shadow-md'
+                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-amber-500/20 hover:border-amber-500/40 animate-neon-yellow' 
+                    : 'bg-white border-slate-200 hover:border-amber-300'
                 }`}>
                   <div className="flex items-center gap-3.5 z-10">
                     <div className={`p-3 rounded-xl border ${
@@ -3074,10 +3149,10 @@ export default function App() {
                 </div>
 
                 {/* OFF SEMENTARA card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.02] shadow-xl group cursor-pointer relative overflow-hidden ${
+                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
                   theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/80 to-[#070b16]/90 border-orange-500/10 hover:border-orange-500/40 hover:shadow-orange-950/20 animate-neon-orange' 
-                    : 'bg-white border-slate-200 hover:border-orange-300 shadow-md'
+                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-orange-500/20 hover:border-orange-500/40 animate-neon-orange' 
+                    : 'bg-white border-slate-200 hover:border-orange-300'
                 }`}>
                   <div className="flex items-center gap-3.5 z-10">
                     <div className={`p-3 rounded-xl border ${
@@ -3103,10 +3178,10 @@ export default function App() {
                 </div>
 
                 {/* CABUT KAS 1 card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.02] shadow-xl group cursor-pointer relative overflow-hidden ${
+                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
                   theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/80 to-[#070b16]/90 border-rose-500/10 hover:border-rose-500/40 hover:shadow-rose-950/20 animate-neon-red' 
-                    : 'bg-white border-slate-200 hover:border-rose-300 shadow-md'
+                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-rose-500/20 hover:border-rose-500/40 animate-neon-red' 
+                    : 'bg-white border-slate-200 hover:border-rose-300'
                 }`}>
                   <div className="flex items-center gap-3.5 z-10">
                     <div className={`p-3 rounded-xl border ${
@@ -3147,10 +3222,16 @@ export default function App() {
           </div>
         )}
 
-        {!isLoading && activeTab === 'monitor' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* LEFT SIDE PANEL: Form Input Bank (Visible only for Admins) */}
+        {!isLoading && activeTab === 'monitor' && !showOnlyBermasalah && dashboardViewMode === 'grafik' ? (
+          <div className="w-full">
+            {renderGraphicalDashboard()}
+          </div>
+        ) : null}
+
+        {!isLoading && activeTab === 'monitor' && (showOnlyBermasalah || dashboardViewMode === 'daftar') ? (
+          <>
+            {/* LEFT SIDE PANEL: Form Input Bank (Hidden per user request) */}
+            {false && (
             <div className="lg:col-span-4 flex flex-col gap-6">
               
               {role === 'admin' ? (
@@ -3396,17 +3477,17 @@ export default function App() {
                           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-slate-400">Rp</span>
                           <input
                             type="text"
-                            value={pasteBaseNominal.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
+                            value={pasteBaseNominal ? formatNominalDisplay(pasteBaseNominal) : ''}
                             onChange={(e) => {
                               const cleanNum = e.target.value.replace(/[^0-9]/g, '');
                               setPasteBaseNominal(cleanNum || '10000000');
                             }}
-                            placeholder="Contoh: 10.000.000"
+                            placeholder="Contoh: 10,000,000"
                             className="w-full bg-[#060913] border border-white/10 rounded-xl pl-9 pr-3.5 py-2 text-xs font-mono text-white font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                           />
                         </div>
                         <p className="text-[9px] text-slate-400 font-semibold mt-1.5 leading-relaxed">
-                          Sistem akan mengacak nominal ujungnya secara otomatis, memastikan setiap rekening mendapatkan nominal cacing unik (misal: <strong className="text-emerald-400">&gt;10.000.003</strong>).
+                          Sistem akan mengacak nominal ujungnya secara otomatis, memastikan setiap rekening mendapatkan nominal cacing unik (misal: <strong className="text-emerald-400">&gt;10,000,003</strong>).
                         </p>
                       </div>
 
@@ -3625,43 +3706,12 @@ export default function App() {
               </div>
 
             </div>
+            )}
 
-            {/* RIGHT SIDE PANEL: Bank List, Search & Filters or Graphical Charts */}
-            <div className="lg:col-span-8 flex flex-col gap-6">
-              
-              {/* View Mode Tabs (Only for Dashboard Utama) */}
-              {!showOnlyBermasalah && (
-                <div className="flex bg-[#0f1425]/50 p-1 rounded-xl border border-white/[0.04] self-start md:self-auto min-w-[280px]">
-                  <button
-                    onClick={() => setDashboardViewMode('grafik')}
-                    className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                      dashboardViewMode === 'grafik'
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md border border-blue-400/10'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span>📊 ANALISIS GRAFIK</span>
-                  </button>
-                  <button
-                    onClick={() => setDashboardViewMode('daftar')}
-                    className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                      dashboardViewMode === 'daftar'
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md border border-blue-400/10'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <LayoutList className="h-4 w-4" />
-                    <span>📋 DAFTAR REKENING</span>
-                  </button>
-                </div>
-              )}
+            {/* RIGHT SIDE PANEL: Bank List, Search & Filters */}
+            <div className="w-full flex flex-col gap-6">
 
-              {!showOnlyBermasalah && dashboardViewMode === 'grafik' ? (
-                renderGraphicalDashboard()
-              ) : (
-                <>
-                  {/* Filters */}
+              {/* Filters */}
                   <div className="bg-gradient-to-b from-[#0f1425]/95 to-[#070b16]/98 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-white/[0.08] flex flex-col gap-5 animate-neon-blue">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="relative flex-1">
@@ -3804,6 +3854,7 @@ export default function App() {
                       </button>
                     )}
                   </div>
+                </div>
 
                 {filteredBanks.length === 0 ? (
                   <div className="bg-[#0f1425]/70 backdrop-blur-md border border-white/[0.06] rounded-2xl p-10 text-center flex flex-col items-center justify-center gap-3">
@@ -3830,11 +3881,11 @@ export default function App() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ duration: 0.2 }}
-                            className={`bg-gradient-to-b from-[#0f1425]/85 to-[#070b16]/95 backdrop-blur-lg rounded-2xl border transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl relative overflow-hidden group ${
-                              bank.status === 'Aman' ? 'border-emerald-500/15 hover:border-emerald-500/40 hover:shadow-emerald-950/20 shadow-lg shadow-emerald-950/5' :
-                              bank.status === 'RTP' ? 'border-amber-500/15 hover:border-amber-500/40 hover:shadow-amber-950/20 shadow-lg shadow-amber-950/5' :
-                              bank.status === 'Off Sementara' ? 'border-orange-500/15 hover:border-orange-500/40 hover:shadow-orange-950/20 shadow-lg shadow-orange-950/5' :
-                              'border-rose-500/15 hover:border-rose-500/40 hover:shadow-rose-950/20 shadow-lg shadow-rose-950/5'
+                            className={`bg-gradient-to-b from-[#0f1425] to-[#070b16] rounded-2xl border transition-all duration-300 hover:scale-[1.005] relative overflow-hidden group ${
+                              bank.status === 'Aman' ? 'border-emerald-500/20 hover:border-emerald-500/40' :
+                              bank.status === 'RTP' ? 'border-amber-500/20 hover:border-amber-500/40' :
+                              bank.status === 'Off Sementara' ? 'border-orange-500/20 hover:border-orange-500/40' :
+                              'border-rose-500/20 hover:border-rose-500/40'
                             }`}
                             id={`bank-card-${bank.id}`}
                           >
@@ -4038,13 +4089,8 @@ export default function App() {
                   </div>
                 )}
               </div>
-              </>
-              )}
-
-            </div>
-
-          </div>
-        )}
+          </>
+        ) : null}
 
         {activeTab === 'pending_wd' && (
           <PendingWdReport showToast={showToast} />
