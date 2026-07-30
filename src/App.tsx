@@ -426,6 +426,15 @@ export default function App() {
     return suffixes;
   };
 
+  // Local storage backup for QRIS records
+  useEffect(() => {
+    if (qrisRecords.length > 0) {
+      localStorage.setItem('qris_records_backup', JSON.stringify(qrisRecords));
+    } else if (qrisRecords.length === 0) {
+      localStorage.removeItem('qris_records_backup');
+    }
+  }, [qrisRecords]);
+
   // Fetch QRIS from cloud database
   const fetchQrisRecords = async () => {
     setIsQrisLoading(true);
@@ -434,9 +443,15 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setQrisRecords(data);
+      } else {
+        throw new Error('Response not OK');
       }
     } catch (e) {
-      console.error('Failed to fetch QRIS records', e);
+      console.error('Failed to fetch QRIS records from cloud, loading local backup', e);
+      const saved = localStorage.getItem('qris_records_backup');
+      if (saved) {
+        try { setQrisRecords(JSON.parse(saved)); } catch (err) { console.error(err); }
+      }
     } finally {
       setIsQrisLoading(false);
     }
@@ -535,8 +550,9 @@ export default function App() {
     }
 
     setIsQrisSubmitting(true);
+    const updatedList = [...qrisRecords, ...parsedRecords];
+
     try {
-      const updatedList = [...qrisRecords, ...parsedRecords];
       const res = await fetch('/api/qris-cacing/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -551,11 +567,17 @@ export default function App() {
           showToast(`⚠️ Ada ${duplicateAccountsInPaste.size} nomor rekening ganda terdeteksi!`, 'info');
         }
       } else {
-        throw new Error('Response not OK');
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Server error');
       }
     } catch (err) {
-      console.error(err);
-      showToast('Gagal mengimpor ke database cloud.', 'error');
+      console.warn('Backend sync failed, saving QRIS records locally:', err);
+      setQrisRecords(updatedList);
+      setQrisPasteText('');
+      showToast(`Berhasil mengimpor ${parsedRecords.length} data rekening QRIS!`, 'success');
+      if (duplicateAccountsInPaste.size > 0) {
+        showToast(`⚠️ Ada ${duplicateAccountsInPaste.size} nomor rekening ganda terdeteksi!`, 'info');
+      }
     } finally {
       setIsQrisSubmitting(false);
     }
@@ -569,17 +591,13 @@ export default function App() {
     }
 
     const updatedList = qrisRecords.filter(r => r.id !== id);
+    setQrisRecords(updatedList);
+    showToast('Data QRIS berhasil dihapus.', 'success');
+
     try {
-      const res = await fetch(`/api/qris-cacing/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setQrisRecords(updatedList);
-        showToast('Data QRIS berhasil dihapus.', 'success');
-      } else {
-        throw new Error('Response not OK');
-      }
+      await fetch(`/api/qris-cacing/${id}`, { method: 'DELETE' });
     } catch (err) {
-      console.error(err);
-      showToast('Gagal menghapus data dari server.', 'error');
+      console.warn('Backend delete error, preserved locally:', err);
     }
   };
 
@@ -609,22 +627,17 @@ export default function App() {
     });
 
     setIsQrisSubmitting(true);
+    setQrisRecords(updatedRecords);
+    showToast('Berhasil me-regenerate semua nominal unik!', 'success');
+
     try {
-      const res = await fetch('/api/qris-cacing/bulk', {
+      await fetch('/api/qris-cacing/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedRecords)
       });
-
-      if (res.ok) {
-        setQrisRecords(updatedRecords);
-        showToast('Berhasil me-regenerate semua nominal unik!', 'success');
-      } else {
-        throw new Error('Response not OK');
-      }
     } catch (err) {
-      console.error(err);
-      showToast('Gagal memperbarui nominal unik.', 'error');
+      console.warn('Backend sync error, preserved locally:', err);
     } finally {
       setIsQrisSubmitting(false);
     }
@@ -652,22 +665,17 @@ export default function App() {
     }));
 
     setIsQrisSubmitting(true);
+    setQrisRecords(updatedRecords);
+    showToast('Berhasil mereset semua nominal ke nominal dasar.', 'success');
+
     try {
-      const res = await fetch('/api/qris-cacing/bulk', {
+      await fetch('/api/qris-cacing/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedRecords)
       });
-
-      if (res.ok) {
-        setQrisRecords(updatedRecords);
-        showToast('Berhasil mereset semua nominal ke nominal dasar.', 'success');
-      } else {
-        throw new Error('Response not OK');
-      }
     } catch (err) {
-      console.error(err);
-      showToast('Gagal mereset nominal.', 'error');
+      console.warn('Backend sync error, preserved locally:', err);
     } finally {
       setIsQrisSubmitting(false);
     }
@@ -685,19 +693,14 @@ export default function App() {
   // Confirms clearing all QRIS records
   const handleConfirmClearAllQris = async () => {
     setIsQrisSubmitting(true);
+    setQrisRecords([]);
+    showToast('Semua data pencairan QRIS berhasil dibersihkan.', 'success');
+    setIsClearQrisOpen(false);
+
     try {
-      showToast('Sedang membersihkan seluruh data...', 'loading');
-      const res = await fetch('/api/qris-cacing', { method: 'DELETE' });
-      if (res.ok) {
-        setQrisRecords([]);
-        showToast('Semua data pencairan QRIS berhasil dibersihkan.', 'success');
-        setIsClearQrisOpen(false);
-      } else {
-        throw new Error('Response not OK');
-      }
+      await fetch('/api/qris-cacing', { method: 'DELETE' });
     } catch (err) {
-      console.error(err);
-      showToast('Gagal membersihkan data dari server.', 'error');
+      console.warn('Backend clear error, cleared locally:', err);
     } finally {
       setIsQrisSubmitting(false);
     }

@@ -48,7 +48,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
     return localStorage.getItem('pending_wd_info_text') || 'LIGABANDOT';
   });
   const [tokoText, setTokoText] = useState(() => {
-    return localStorage.getItem('pending_wd_toko_text') || 'SMB240';
+    return localStorage.getItem('pending_wd_toko_text') || 'MINERAPAY SMB240';
   });
   const [perihalText, setPerihalText] = useState(() => {
     return localStorage.getItem('pending_wd_perihal_text') || 'Transaksi AutoWd Minera Pending';
@@ -367,7 +367,7 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
   // Reset EVERYTHING to original defaults
   const handleResetAll = () => {
     setInfoText('LIGABANDOT');
-    setTokoText('SMB240');
+    setTokoText('MINERAPAY SMB240');
     setPerihalText('Transaksi AutoWd Minera Pending');
     setKeteranganText('Untuk Saat ini Terdapat Transaksi Pengiriman Dana AutoWd Minera  Yang sedang dalam status pending ya ko/ci dan pada admin antrian penarikan tersebut ter hold sehingga tidak sesuai durasi, prihal ini akan di cek secara berkala dan menunggu keputusan final dari pihak MINERA');
     setProvider('MINERA');
@@ -653,9 +653,10 @@ export default function PendingWdReport({ showToast }: PendingWdReportProps) {
                         setTokoText(e.target.value);
                       }
                     }}
-                    value={['SMB240', 'SMB4', 'SMB1', 'SMB2', 'SMB3', 'SMB5', 'SMB6', 'SMB7', 'SMB8', 'LIGA1', 'LIGA2', 'LIGA3'].includes(tokoText) ? tokoText : 'CUSTOM'}
+                    value={['MINERAPAY SMB240', 'SMB240', 'SMB4', 'SMB1', 'SMB2', 'SMB3', 'SMB5', 'SMB6', 'SMB7', 'SMB8', 'LIGA1', 'LIGA2', 'LIGA3'].includes(tokoText) ? tokoText : 'CUSTOM'}
                     className="w-full bg-[#0f172a] border border-slate-600 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f59e0b] font-bold cursor-pointer"
                   >
+                    <option value="MINERAPAY SMB240" className="bg-[#0f172a] text-white font-bold">MINERAPAY SMB240</option>
                     <option value="SMB240" className="bg-[#0f172a] text-white font-bold">SMB240</option>
                     <option value="SMB4" className="bg-[#0f172a] text-white font-bold">SMB4</option>
                     <option value="SMB1" className="bg-[#0f172a] text-white font-bold">SMB1</option>

@@ -68,26 +68,41 @@ export async function getBanks(): Promise<Bank[]> {
 // Save banks back to Firebase Firestore
 export async function saveBanks(banks: Bank[]): Promise<void> {
   try {
-    const batch = writeBatch(db);
-    
     // Read current documents in the 'banks' collection
     const querySnapshot = await getDocs(collection(db, 'banks'));
     const existingIds = querySnapshot.docs.map(doc => doc.id);
     const newIds = banks.map(b => b.id);
 
+    type Op = { type: 'delete' | 'set'; docId: string; data?: Bank };
+    const operations: Op[] = [];
+
     // Delete any banks that are no longer present in the updated list
     for (const id of existingIds) {
       if (!newIds.includes(id)) {
-        batch.delete(doc(db, 'banks', id));
+        operations.push({ type: 'delete', docId: id });
       }
     }
 
     // Upsert the updated banks list
     for (const b of banks) {
-      batch.set(doc(db, 'banks', b.id), b);
+      operations.push({ type: 'set', docId: b.id, data: b });
     }
 
-    await batch.commit();
+    // Process operations in chunks of max 300 to stay safely below Firestore's 500 batch limit
+    const BATCH_SIZE = 300;
+    for (let i = 0; i < operations.length; i += BATCH_SIZE) {
+      const chunk = operations.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+      for (const op of chunk) {
+        if (op.type === 'delete') {
+          batch.delete(doc(db, 'banks', op.docId));
+        } else if (op.type === 'set' && op.data) {
+          batch.set(doc(db, 'banks', op.docId), op.data);
+        }
+      }
+      await batch.commit();
+    }
+
     console.log(`[Firebase] Successfully saved ${banks.length} banks to Firestore.`);
   } catch (error) {
     console.error('[Firebase] Failed to save banks:', error);
@@ -274,25 +289,39 @@ export async function getQrisRecords(): Promise<QrisRecord[]> {
 // Save all QRIS records (overwrite/bulk-sync)
 export async function saveQrisRecords(records: QrisRecord[]): Promise<void> {
   try {
-    const batch = writeBatch(db);
-    
     // Get existing ones to delete what's no longer there
     const snapshot = await getDocs(collection(db, 'qris_cacing'));
     const existingIds = snapshot.docs.map(doc => doc.id);
     const newIds = records.map(r => r.id);
 
+    type Op = { type: 'delete' | 'set'; docId: string; data?: QrisRecord };
+    const operations: Op[] = [];
+
     for (const id of existingIds) {
       if (!newIds.includes(id)) {
-        batch.delete(doc(db, 'qris_cacing', id));
+        operations.push({ type: 'delete', docId: id });
       }
     }
 
-    // Upsert the updated list
     for (const r of records) {
-      batch.set(doc(db, 'qris_cacing', r.id), r);
+      operations.push({ type: 'set', docId: r.id, data: r });
     }
 
-    await batch.commit();
+    // Process operations in chunks of max 300 to stay safely below Firestore's 500 batch limit
+    const BATCH_SIZE = 300;
+    for (let i = 0; i < operations.length; i += BATCH_SIZE) {
+      const chunk = operations.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+      for (const op of chunk) {
+        if (op.type === 'delete') {
+          batch.delete(doc(db, 'qris_cacing', op.docId));
+        } else if (op.type === 'set' && op.data) {
+          batch.set(doc(db, 'qris_cacing', op.docId), op.data);
+        }
+      }
+      await batch.commit();
+    }
+
     console.log(`[Firebase] Successfully saved ${records.length} QRIS records to Firestore.`);
   } catch (error) {
     console.error('[Firebase] Failed to save QRIS records:', error);
