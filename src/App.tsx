@@ -41,16 +41,19 @@ import {
   Sparkles,
   ShieldAlert,
   QrCode,
-  DollarSign
+  DollarSign,
+  HandCoins
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bank, BankStatus, QrisRecord } from './types';
 import FollowUpReport from './components/FollowUpReport';
 import PendingWdReport from './components/PendingWdReport';
+import PeminjamanDanaReport from './components/PeminjamanDanaReport';
 import EditBankModal from './components/EditBankModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import HistoryPanel from './components/HistoryPanel';
 import AccessDenied from './components/AccessDenied';
+import { GoldConstellationCanvas } from './components/GoldConstellationCanvas';
 import { initAuth, googleSignIn, logout as googleLogout } from './lib/firebaseAuth';
 import logoImg from './assets/images/ligabandot_logo_1785220332925.jpg';
 import bgImg from './assets/images/bg_ligabandot_1785220966195.jpg';
@@ -262,9 +265,9 @@ export default function App() {
   }, [banks, role]);
 
   // Active Tab state
-  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris' | 'pending_wd'>(() => {
+  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris' | 'pending_wd' | 'loan'>(() => {
     const saved = localStorage.getItem('bank_status_active_tab');
-    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris' || saved === 'pending_wd') {
+    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris' || saved === 'pending_wd' || saved === 'loan') {
       return saved as any;
     }
     return 'monitor';
@@ -1938,30 +1941,15 @@ export default function App() {
       isActive: activeTab === 'monitor' && !showOnlyBermasalah && dashboardViewMode === 'grafik'
     },
     { 
-      id: 'daftar_rekening', 
-      name: 'Daftar Rekening', 
-      icon: LayoutList,
+      id: 'loan', 
+      name: 'Peminjaman Dana Sekali Tempel', 
+      icon: HandCoins,
+      badge: 'BARU',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
       action: () => {
-        setActiveTab('monitor');
-        setShowOnlyBermasalah(false);
-        setDashboardViewMode('daftar');
+        setActiveTab('loan');
       },
-      isActive: activeTab === 'monitor' && !showOnlyBermasalah && dashboardViewMode === 'daftar'
-    },
-    { 
-      id: 'bermasalah', 
-      name: 'Rek Bermasalah', 
-      icon: AlertCircle, 
-      badge: counters.RTP + counters['Off Sementara'] + counters['Cabut Kas 1'] > 0 
-        ? `${counters.RTP + counters['Off Sementara'] + counters['Cabut Kas 1']}` 
-        : undefined, 
-      badgeColor: 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
-      action: () => {
-        setActiveTab('monitor');
-        setShowOnlyBermasalah(true);
-        setDashboardViewMode('daftar');
-      },
-      isActive: activeTab === 'monitor' && showOnlyBermasalah
+      isActive: activeTab === 'loan'
     },
     { 
       id: 'pending_wd', 
@@ -1996,7 +1984,7 @@ export default function App() {
 
   // Render Sidebar Navigation with Dashboard Dropdown Accordion
   const renderSidebarNav = (isMobile: boolean = false) => {
-    const isDashboardActiveGroup = ['monitor', 'pending_wd', 'qris'].includes(activeTab);
+    const isDashboardActiveGroup = ['monitor', 'pending_wd', 'qris', 'loan'].includes(activeTab);
 
     return (
       <nav className="flex-1 px-3 py-5 space-y-2 overflow-y-auto">
@@ -2007,22 +1995,22 @@ export default function App() {
             onClick={() => setIsDashboardDropdownOpen(!isDashboardDropdownOpen)}
             className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
               isDashboardActiveGroup
-                ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/10 text-amber-300 border border-amber-500/30 shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-gradient-to-r from-[#D4AF37]/30 to-[#FFD700]/10 text-[#FFD700] border border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.2)]'
+                : 'text-slate-300 hover:text-[#FFD700] hover:bg-white/5 border border-transparent'
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <CreditCard className="h-4 w-4 text-amber-400 shrink-0" />
+              <CreditCard className="h-4 w-4 text-[#FFD700] shrink-0" />
               <span>DASHBOARD</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/30">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#FFD700] font-extrabold border border-[#D4AF37]/30">
                 {dashboardSubItems.length} MENU
               </span>
               {isDashboardDropdownOpen ? (
-                <ChevronDown className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+                <ChevronDown className="h-4 w-4 text-[#D4AF37] transition-transform duration-200" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+                <ChevronRight className="h-4 w-4 text-[#D4AF37] transition-transform duration-200" />
               )}
             </div>
           </button>
@@ -2035,7 +2023,7 @@ export default function App() {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden pl-2.5 space-y-1 border-l-2 border-amber-500/30 ml-4 my-1.5"
+                className="overflow-hidden pl-2.5 space-y-1 border-l-2 border-[#D4AF37]/40 ml-4 my-1.5"
               >
                 {dashboardSubItems.map((sub) => {
                   return (
@@ -2048,12 +2036,12 @@ export default function App() {
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
                         sub.isActive
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 font-extrabold'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                          ? 'bg-gradient-to-r from-[#D4AF37] to-[#B8962E] text-black font-extrabold shadow-[0_0_12px_rgba(212,175,55,0.35)]'
+                          : 'text-slate-400 hover:text-[#FFD700] hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <sub.icon className={`h-3.5 w-3.5 shrink-0 ${sub.isActive ? 'text-white' : 'text-slate-400'}`} />
+                        <sub.icon className={`h-3.5 w-3.5 shrink-0 ${sub.isActive ? 'text-black' : 'text-[#D4AF37]/80'}`} />
                         <span>{sub.name}</span>
                       </div>
                       {sub.badge && (
@@ -2076,22 +2064,22 @@ export default function App() {
             onClick={() => setIsSistemLaporanDropdownOpen(!isSistemLaporanDropdownOpen)}
             className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
               ['followup', 'history', 'settings'].includes(activeTab)
-                ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/10 text-blue-300 border border-blue-500/30 shadow-md'
-                : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+                ? 'bg-gradient-to-r from-[#D4AF37]/30 to-[#FFD700]/10 text-[#FFD700] border border-[#D4AF37]/40 shadow-[0_0_15px_rgba(212,175,55,0.2)]'
+                : 'text-slate-300 hover:text-[#FFD700] hover:bg-white/5 border border-transparent'
             }`}
           >
             <div className="flex items-center gap-2.5">
-              <FileText className="h-4 w-4 text-blue-400 shrink-0" />
+              <FileText className="h-4 w-4 text-[#FFD700] shrink-0" />
               <span>SISTEM & LAPORAN</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-extrabold border border-blue-500/30">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#FFD700] font-extrabold border border-[#D4AF37]/30">
                 {otherMenuItems.length} MENU
               </span>
               {isSistemLaporanDropdownOpen ? (
-                <ChevronDown className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+                <ChevronDown className="h-4 w-4 text-[#D4AF37] transition-transform duration-200" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-slate-400 transition-transform duration-200" />
+                <ChevronRight className="h-4 w-4 text-[#D4AF37] transition-transform duration-200" />
               )}
             </div>
           </button>
@@ -2104,7 +2092,7 @@ export default function App() {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden pl-2.5 space-y-1 border-l-2 border-blue-500/30 ml-4 my-1.5"
+                className="overflow-hidden pl-2.5 space-y-1 border-l-2 border-[#D4AF37]/40 ml-4 my-1.5"
               >
                 {otherMenuItems.map((item) => {
                   return (
@@ -2117,12 +2105,12 @@ export default function App() {
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-150 cursor-pointer ${
                         item.isActive
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 font-extrabold'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                          ? 'bg-gradient-to-r from-[#D4AF37] to-[#B8962E] text-black font-extrabold shadow-[0_0_12px_rgba(212,175,55,0.35)]'
+                          : 'text-slate-400 hover:text-[#FFD700] hover:bg-white/5'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <item.icon className={`h-3.5 w-3.5 shrink-0 ${item.isActive ? 'text-white' : 'text-slate-400'}`} />
+                        <item.icon className={`h-3.5 w-3.5 shrink-0 ${item.isActive ? 'text-black' : 'text-[#D4AF37]/80'}`} />
                         <span>{item.name}</span>
                       </div>
                     </button>
@@ -2591,15 +2579,13 @@ export default function App() {
       <div className="space-y-6 animate-fade-in">
         
         {/* Row 1: Health Message + System Uptime Banner */}
-        <div className={`p-5 rounded-2xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-          theme === 'dark' ? 'bg-[#0f1425]/50 border-white/[0.04]' : 'bg-white border-slate-200'
-        }`}>
+        <div className="glass-gold-card p-5 border flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className={`p-3 rounded-xl border shrink-0 ${healthBg} ${healthBorder} ${healthColor}`}>
               <Shield className="h-6 w-6" />
             </div>
             <div>
-              <h3 className={`text-base font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
+              <h3 className="text-base font-bold text-white">
                 {systemHealthMessage}
               </h3>
               <p className="text-xs text-slate-400 mt-1 font-semibold">
@@ -2607,14 +2593,14 @@ export default function App() {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4 border-t md:border-t-0 md:border-l border-white/[0.06] pt-4 md:pt-0 md:pl-6 shrink-0">
+          <div className="flex flex-wrap items-center gap-4 border-t md:border-t-0 md:border-l border-[#D4AF37]/20 pt-4 md:pt-0 md:pl-6 shrink-0">
             <div className="text-center md:text-left">
-              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Akurasi Sinkronisasi</span>
-              <span className="text-xs font-mono font-bold text-[#D4AF37] mt-0.5 block">100% Real-Time Cloud</span>
+              <span className="block text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest">Akurasi Sinkronisasi</span>
+              <span className="text-xs font-mono font-bold text-[#FFD700] mt-0.5 block">100% Real-Time Cloud</span>
             </div>
             <div className="text-center md:text-left">
               <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Rekening</span>
-              <span className="text-xs font-mono font-bold text-blue-400 mt-0.5 block">{total} Akun</span>
+              <span className="text-xs font-mono font-bold text-[#FFF4C2] mt-0.5 block">{total} Akun</span>
             </div>
           </div>
         </div>
@@ -2623,11 +2609,9 @@ export default function App() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           
           {/* Chart 1: Status Distribution Donut Chart */}
-          <div className={`md:col-span-5 p-6 rounded-2xl border flex flex-col ${
-            theme === 'dark' ? 'bg-[#0f1425]/70 border-white/[0.06]' : 'bg-white border-slate-200'
-          }`}>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-1.5">
-              <BarChart3 className="h-3.5 w-3.5 text-blue-400" />
+          <div className="md:col-span-5 p-6 glass-gold-card border flex flex-col">
+            <h4 className="text-xs font-bold text-[#D4AF37] uppercase tracking-widest mb-6 flex items-center gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5 text-[#FFD700]" />
               Distribusi Status Bank
             </h4>
 
@@ -2646,7 +2630,7 @@ export default function App() {
                       cy="50"
                       r="40"
                       fill="transparent"
-                      stroke={theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'}
+                      stroke="rgba(212,175,55,0.1)"
                       strokeWidth="10"
                     />
                     {/* Dynamic slices */}
@@ -2658,7 +2642,7 @@ export default function App() {
                   
                   {/* Inner text showing health percentage */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-xl font-black font-mono tracking-tighter text-white">
+                    <span className="text-xl font-black font-mono tracking-tighter text-[#FFD700]">
                       {healthRate}%
                     </span>
                     <span className="text-[8px] text-emerald-400 font-extrabold uppercase tracking-widest mt-0.5">
@@ -2703,11 +2687,9 @@ export default function App() {
           </div>
 
           {/* Chart 2: Inventory / Bank Distribution Bar Chart */}
-          <div className={`md:col-span-7 p-6 rounded-2xl border flex flex-col ${
-            theme === 'dark' ? 'bg-[#0f1425]/70 border-white/[0.06]' : 'bg-white border-slate-200'
-          }`}>
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5 text-indigo-400" />
+          <div className="md:col-span-7 p-6 glass-gold-card border flex flex-col">
+            <h4 className="text-xs font-bold text-[#D4AF37] uppercase tracking-widest mb-6 flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5 text-[#FFD700]" />
               Statistik Jumlah Rekening per Bank (Top 5)
             </h4>
 
@@ -2720,20 +2702,20 @@ export default function App() {
                 {sortedInventory.map((item, index) => {
                   const itemWidth = (item.count / maxCount) * 100;
                   const gradient = index % 2 === 0 
-                    ? 'from-blue-500 to-indigo-500' 
-                    : 'from-purple-500 to-indigo-500';
+                    ? 'from-[#D4AF37] to-[#FFD700]' 
+                    : 'from-[#FFD700] to-[#B8962E]';
                   return (
                     <div key={item.name} className="space-y-1.5">
                       <div className="flex justify-between text-xs font-bold">
                         <span className="text-slate-200 tracking-wide uppercase">{item.name}</span>
-                        <span className="font-mono text-slate-400">{item.count} Rekening</span>
+                        <span className="font-mono text-[#D4AF37]">{item.count} Rekening</span>
                       </div>
-                      <div className="h-3 w-full bg-white/[0.03] rounded-full overflow-hidden border border-white/[0.04]">
+                      <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-[#D4AF37]/20">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${itemWidth}%` }}
                           transition={{ duration: 0.8, ease: "easeOut" }}
-                          className={`h-full rounded-full bg-gradient-to-r ${gradient} shadow-[0_0_10px_rgba(99,102,241,0.2)]`}
+                          className={`h-full rounded-full bg-gradient-to-r ${gradient} shadow-[0_0_12px_rgba(212,175,55,0.3)]`}
                         />
                       </div>
                     </div>
@@ -2745,28 +2727,20 @@ export default function App() {
         </div>
 
         {/* Row 3: Live Visual Status Matrix (High Density Capsules) */}
-        <div className={`p-6 rounded-2xl border ${
-          theme === 'dark' ? 'bg-[#0f1425]/70 border-white/[0.06]' : 'bg-white border-slate-200'
-        }`}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-white/[0.04]">
+        <div className="p-6 glass-gold-heavy border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[#D4AF37]/20">
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-[#D4AF37] uppercase tracking-widest flex items-center gap-1.5">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D4AF37]"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFD700] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FFD700]"></span>
                 </span>
                 Sistem Matriks Status Real-Time
               </h4>
-              <p className="text-[10px] text-slate-500 font-bold font-mono tracking-wider mt-1 uppercase">
+              <p className="text-[10px] text-slate-400 font-bold font-mono tracking-wider mt-1 uppercase">
                 Status operasional seluruh bank secara komparatif cepat
               </p>
             </div>
-            <button
-              onClick={() => setDashboardViewMode('daftar')}
-              className="text-xs font-bold text-[#D4AF37] hover:text-[#f3cd4a] transition-all flex items-center gap-1 cursor-pointer self-start sm:self-auto uppercase tracking-wider"
-            >
-              Kelola Detail di Daftar Rekening <ChevronRight className="h-4 w-4" />
-            </button>
           </div>
 
           {banks.length === 0 ? (
@@ -2845,9 +2819,13 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen font-sans antialiased selection:bg-blue-500/30 selection:text-white flex flex-col lg:flex-row relative ${
-      theme === 'dark' ? 'bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-800'
-    }`}>
+    <div className="min-h-screen font-sans antialiased selection:bg-[#D4AF37]/40 selection:text-white flex flex-col lg:flex-row relative z-10 text-slate-100 bg-[#050505]">
+      {/* HTML5 Canvas Black Gold Constellation Network Animation */}
+      <GoldConstellationCanvas />
+
+      {/* Dark Overlay over background animation for supreme legibility */}
+      <div className="fixed inset-0 bg-black/25 pointer-events-none z-1" />
+
       {/* Toast Notification Container */}
       <AnimatePresence>
         {toast && (
@@ -2881,9 +2859,9 @@ export default function App() {
       </AnimatePresence>
 
       {/* Sidebar (Desktop) */}
-      <aside className="hidden lg:flex flex-col w-64 bg-[#09090B] border-r border-amber-500/10 h-screen sticky top-0 shrink-0 z-40 text-slate-100 shadow-xl">
+      <aside className="hidden lg:flex flex-col w-64 bg-[#070707]/90 backdrop-blur-xl border-r border-[#D4AF37]/25 h-screen sticky top-0 shrink-0 z-40 text-slate-100 shadow-2xl">
         {/* Logo Section */}
-        <div className="flex flex-col items-center justify-center pt-5 px-4 pb-5 border-b border-amber-500/20 relative group">
+        <div className="flex flex-col items-center justify-center pt-5 px-4 pb-5 border-b border-[#D4AF37]/20 relative group">
           <div className="flex items-center gap-3 py-1">
             <img 
               src={logoImg} 
@@ -2892,24 +2870,24 @@ export default function App() {
               className="h-11 w-11 rounded-full object-cover border-2 border-[#D4AF37] shadow-lg shadow-amber-500/20 shrink-0 group-hover:scale-105 transition-transform duration-300"
             />
             <div className="text-left">
-              <span className="text-lg font-extrabold tracking-[0.12em] text-[#D4AF37] block font-sans leading-tight">
+              <span className="text-lg font-extrabold tracking-[0.12em] text-[#FFD700] block font-sans leading-tight text-glow-gold-effect">
                 LIGABANDOT
               </span>
-              <span className="text-[8px] text-slate-400 font-bold font-mono tracking-widest uppercase mt-1 block">
-                BANK MONITOR SYSTEM
+              <span className="text-[8px] text-[#D4AF37]/80 font-bold font-mono tracking-widest uppercase mt-1 block">
+                VIP BLACK GOLD SYSTEM
               </span>
             </div>
           </div>
           {/* Golden line below logo */}
-          <div className="absolute bottom-0 left-4 right-4 h-px bg-[#D4AF37]" />
+          <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
         </div>
 
         {/* Sidebar Menu */}
         {renderSidebarNav(false)}
 
         {/* Sidebar Footer */}
-        <div className="p-4 border-t border-white/[0.04] text-center">
-          <p className="text-[10px] text-slate-500 font-bold font-mono">LIGABANDOT v1.0.0</p>
+        <div className="p-4 border-t border-[#D4AF37]/15 text-center bg-black/40">
+          <p className="text-[10px] text-[#D4AF37] font-bold font-mono tracking-widest">LIGABANDOT VIP v1.0.0</p>
         </div>
       </aside>
 
@@ -2921,7 +2899,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsMobileSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 lg:hidden"
           />
         )}
       </AnimatePresence>
@@ -2934,10 +2912,10 @@ export default function App() {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'tween', duration: 0.3 }}
-            className="fixed inset-y-0 left-0 w-64 bg-[#09090B] border-r border-amber-500/10 z-50 flex flex-col lg:hidden shadow-2xl text-slate-100"
+            className="fixed inset-y-0 left-0 w-64 bg-[#070707]/95 backdrop-blur-2xl border-r border-[#D4AF37]/25 z-50 flex flex-col lg:hidden shadow-2xl text-slate-100"
           >
             {/* Logo Section */}
-            <div className="flex flex-col items-center justify-center pt-5 px-4 pb-5 border-b border-amber-500/20 relative group">
+            <div className="flex flex-col items-center justify-center pt-5 px-4 pb-5 border-b border-[#D4AF37]/20 relative group">
               <div className="flex items-center gap-3 py-1 pr-6">
                 <img 
                   src={logoImg} 
@@ -2946,64 +2924,54 @@ export default function App() {
                   className="h-10 w-10 rounded-full object-cover border-2 border-[#D4AF37] shadow-lg shadow-amber-500/20 shrink-0"
                 />
                 <div className="text-left">
-                  <span className="text-lg font-extrabold tracking-[0.12em] text-[#D4AF37] block font-sans leading-tight">
+                  <span className="text-lg font-extrabold tracking-[0.12em] text-[#FFD700] block font-sans leading-tight">
                     LIGABANDOT
                   </span>
-                  <span className="text-[8px] text-slate-400 font-bold font-mono tracking-widest uppercase mt-1 block">
-                    BANK MONITOR SYSTEM
+                  <span className="text-[8px] text-[#D4AF37]/80 font-bold font-mono tracking-widest uppercase mt-1 block">
+                    VIP BLACK GOLD SYSTEM
                   </span>
                 </div>
               </div>
               <button 
                 onClick={() => setIsMobileSidebarOpen(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                className="absolute top-4 right-4 text-slate-400 hover:text-[#FFD700] p-1 rounded-lg cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
-              <div className="absolute bottom-0 left-4 right-4 h-px bg-[#D4AF37]" />
+              <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[#D4AF37] to-transparent" />
             </div>
 
             {/* Menu */}
             {renderSidebarNav(true)}
 
-            <div className="p-4 border-t border-white/[0.04] text-center">
-              <p className="text-[10px] text-slate-500 font-bold font-mono">LIGABANDOT v1.0.0</p>
+            <div className="p-4 border-t border-[#D4AF37]/15 text-center bg-black/40">
+              <p className="text-[10px] text-[#D4AF37] font-bold font-mono tracking-widest">LIGABANDOT VIP v1.0.0</p>
             </div>
           </motion.aside>
         )}
       </AnimatePresence>
 
       {/* Main Container Right */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden relative z-10">
         
         {/* Main Content Header */}
-        <header className={`border-b sticky top-0 z-40 backdrop-blur-xl py-4 px-6 md:px-8 flex items-center justify-between gap-4 ${
-          theme === 'dark' ? 'bg-[#090d16]/80 border-white/[0.06]' : 'bg-white/80 border-slate-200 shadow-sm'
-        }`}>
+        <header className="border-b border-[#D4AF37]/20 sticky top-0 z-40 backdrop-blur-xl py-4 px-6 md:px-8 flex items-center justify-between gap-4 bg-[#050505]/85 shadow-lg">
           <div className="flex items-center gap-4">
             {/* Hamburger button for mobile */}
             <button 
               onClick={() => setIsMobileSidebarOpen(true)}
-              className={`lg:hidden p-2 rounded-lg border transition cursor-pointer ${
-                theme === 'dark' ? 'bg-[#0b101f] border-white/10 hover:bg-white/5 text-slate-300' : 'bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700'
-              }`}
+              className="lg:hidden p-2 rounded-xl border border-[#D4AF37]/30 bg-black/60 hover:border-[#FFD700] text-[#FFD700] transition cursor-pointer"
             >
               <Menu className="h-5 w-5" />
             </button>
 
             {/* Title with elegant icon prefix */}
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl border ${
-                theme === 'dark' 
-                  ? 'bg-amber-500/10 border-amber-500/20 text-[#D4AF37]' 
-                  : 'bg-amber-500/10 border-amber-500/25 text-amber-600'
-              }`}>
+              <div className="p-2.5 rounded-xl border border-[#D4AF37]/40 bg-[#D4AF37]/10 text-[#FFD700] shadow-[0_0_12px_rgba(212,175,55,0.2)]">
                 <Building2 className="h-5 w-5 shrink-0" />
               </div>
               <div>
-                <h1 className={`text-sm sm:text-base font-extrabold tracking-tight uppercase flex items-center gap-2 ${
-                  theme === 'dark' ? 'text-white' : 'text-slate-900'
-                }`}>
+                <h1 className="text-sm sm:text-base font-extrabold tracking-tight uppercase flex items-center gap-2 text-white">
                   {activeTab === 'monitor' && (
                     showOnlyBermasalah 
                       ? 'Rekening Bermasalah' 
@@ -3011,14 +2979,15 @@ export default function App() {
                         ? 'Dashboard Utama (Analisis Grafik)' 
                         : 'Daftar Rekening Bank'
                   )}
-                  {activeTab === 'qris' && 'Pencairan QRIS'}
+                  {activeTab === 'loan' && 'Peminjaman Dana Sekali Tempel'}
+                  {activeTab === 'qris' && 'Pencairan QRIS Minera'}
                   {activeTab === 'pending_wd' && 'Laporan WD Pending (Minera & Pay2Me)'}
                   {activeTab === 'followup' && 'Laporan Follow Up'}
                   {activeTab === 'history' && 'Riwayat Perubahan'}
                   {activeTab === 'settings' && 'Pengaturan Aplikasi'}
                 </h1>
-                <p className="text-[10px] font-bold text-slate-400 font-mono tracking-wider uppercase mt-0.5 hidden sm:block">
-                  Sistem Real-time LigaBandot
+                <p className="text-[10px] font-bold text-[#D4AF37]/80 font-mono tracking-wider uppercase mt-0.5 hidden sm:block">
+                  Sistem Real-Time VIP Black Gold LigaBandot
                 </p>
               </div>
             </div>
@@ -3085,128 +3054,102 @@ export default function App() {
 
         {/* Quick Status Cards - Only shown on Dashboard & Rek Bermasalah views */}
         {activeTab === 'monitor' && (
-          <section className={`border-b py-6 relative overflow-hidden ${
-            theme === 'dark' ? 'border-white/[0.04] bg-[#090d16]/40' : 'border-slate-200 bg-slate-100/40'
-          }`}>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.04),transparent)] pointer-events-none" />
+          <section className="border-b border-[#D4AF37]/15 py-6 relative overflow-hidden bg-black/40 backdrop-blur-md">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.06),transparent)] pointer-events-none" />
             <div className="px-6 md:px-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 
                 {/* AMAN card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
-                  theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-emerald-500/20 hover:border-emerald-500/40 animate-neon-green' 
-                    : 'bg-white border-slate-200 hover:border-emerald-300'
-                }`}>
+                <div className="glass-gold-card p-5 border flex items-center justify-between group cursor-pointer relative overflow-hidden">
                   <div className="flex items-center gap-3.5 z-10">
-                    <div className={`p-3 rounded-xl border ${
-                      theme === 'dark' ? 'bg-emerald-950/30 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'
-                    }`}>
+                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-950/40">
                       <Shield className="h-5 w-5 text-emerald-400 animate-pulse" />
                     </div>
                     <div>
-                      <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">Aman</p>
-                      <p className={`text-xl font-black font-mono mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                        {counters.Aman} <span className="text-xs font-sans text-slate-500 font-medium">Aktif</span>
+                      <p className="text-[9px] text-[#D4AF37] font-extrabold uppercase tracking-widest">Aman</p>
+                      <p className="text-xl font-black font-mono mt-0.5 text-[#FFD700]">
+                        {counters.Aman} <span className="text-xs font-sans text-slate-400 font-medium">Aktif</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end justify-between h-full py-1 z-10">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping mb-2" />
                     {/* Micro line graph */}
-                    <svg className="w-12 h-5 text-emerald-400/60 hidden sm:block" viewBox="0 0 50 20">
+                    <svg className="w-12 h-5 text-emerald-400/80 hidden sm:block" viewBox="0 0 50 20">
                       <path d="M0,15 Q12,2 25,12 T50,5" fill="transparent" stroke="currentColor" strokeWidth="2" className="animate-pulse" />
                     </svg>
                   </div>
                   {/* Glass highlight glare */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 </div>
 
                 {/* RTP card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
-                  theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-amber-500/20 hover:border-amber-500/40 animate-neon-yellow' 
-                    : 'bg-white border-slate-200 hover:border-amber-300'
-                }`}>
+                <div className="glass-gold-card p-5 border flex items-center justify-between group cursor-pointer relative overflow-hidden">
                   <div className="flex items-center gap-3.5 z-10">
-                    <div className={`p-3 rounded-xl border ${
-                      theme === 'dark' ? 'bg-amber-950/30 border-amber-500/20' : 'bg-amber-50 border-amber-100'
-                    }`}>
+                    <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-950/40">
                       <Zap className="h-5 w-5 text-amber-400 animate-bounce" />
                     </div>
                     <div>
-                      <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">Logout / RTP</p>
-                      <p className={`text-xl font-black font-mono mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                        {counters.RTP} <span className="text-xs font-sans text-slate-500 font-medium">Bank</span>
+                      <p className="text-[9px] text-[#D4AF37] font-extrabold uppercase tracking-widest">Logout / RTP</p>
+                      <p className="text-xl font-black font-mono mt-0.5 text-[#FFD700]">
+                        {counters.RTP} <span className="text-xs font-sans text-slate-400 font-medium">Bank</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end justify-between h-full py-1 z-10">
                     <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse mb-2" />
                     {/* Micro step graph */}
-                    <svg className="w-12 h-5 text-amber-400/60 hidden sm:block" viewBox="0 0 50 20">
+                    <svg className="w-12 h-5 text-amber-400/80 hidden sm:block" viewBox="0 0 50 20">
                       <path d="M0,15 L12,15 L18,5 L32,5 L38,15 L50,15" fill="transparent" stroke="currentColor" strokeWidth="2" />
                     </svg>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 </div>
 
                 {/* OFF SEMENTARA card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
-                  theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-orange-500/20 hover:border-orange-500/40 animate-neon-orange' 
-                    : 'bg-white border-slate-200 hover:border-orange-300'
-                }`}>
+                <div className="glass-gold-card p-5 border flex items-center justify-between group cursor-pointer relative overflow-hidden">
                   <div className="flex items-center gap-3.5 z-10">
-                    <div className={`p-3 rounded-xl border ${
-                      theme === 'dark' ? 'bg-orange-950/30 border-orange-500/20' : 'bg-orange-50 border-orange-100'
-                    }`}>
+                    <div className="p-3 rounded-xl border border-orange-500/30 bg-orange-950/40">
                       <Pause className="h-5 w-5 text-orange-400" />
                     </div>
                     <div>
-                      <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">Off Sementara</p>
-                      <p className={`text-xl font-black font-mono mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                        {counters['Off Sementara']} <span className="text-xs font-sans text-slate-500 font-medium">Bank</span>
+                      <p className="text-[9px] text-[#D4AF37] font-extrabold uppercase tracking-widest">Off Sementara</p>
+                      <p className="text-xl font-black font-mono mt-0.5 text-[#FFD700]">
+                        {counters['Off Sementara']} <span className="text-xs font-sans text-slate-400 font-medium">Bank</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end justify-between h-full py-1 z-10">
                     <span className="h-2 w-2 rounded-full bg-orange-400 animate-pulse mb-2" />
                     {/* Micro smooth sine wave graph */}
-                    <svg className="w-12 h-5 text-orange-400/60 hidden sm:block" viewBox="0 0 50 20">
+                    <svg className="w-12 h-5 text-orange-400/80 hidden sm:block" viewBox="0 0 50 20">
                       <path d="M0,10 Q12,18 25,10 T50,10" fill="transparent" stroke="currentColor" strokeWidth="2" />
                     </svg>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 </div>
 
                 {/* CABUT KAS 1 card */}
-                <div className={`p-5 rounded-2xl border flex items-center justify-between transition-all hover:scale-[1.01] group cursor-pointer relative overflow-hidden ${
-                  theme === 'dark' 
-                    ? 'bg-gradient-to-b from-[#0e172a]/90 to-[#070b16] border-rose-500/20 hover:border-rose-500/40 animate-neon-red' 
-                    : 'bg-white border-slate-200 hover:border-rose-300'
-                }`}>
+                <div className="glass-gold-card p-5 border flex items-center justify-between group cursor-pointer relative overflow-hidden">
                   <div className="flex items-center gap-3.5 z-10">
-                    <div className={`p-3 rounded-xl border ${
-                      theme === 'dark' ? 'bg-rose-950/30 border-rose-500/20' : 'bg-rose-50 border-rose-100'
-                    }`}>
+                    <div className="p-3 rounded-xl border border-rose-500/30 bg-rose-950/40">
                       <ShieldAlert className="h-5 w-5 text-rose-400 animate-bounce" />
                     </div>
                     <div>
-                      <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest">Cabut Kas 1</p>
-                      <p className={`text-xl font-black font-mono mt-0.5 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                        {counters['Cabut Kas 1']} <span className="text-xs font-sans text-slate-500 font-medium">Bank</span>
+                      <p className="text-[9px] text-[#D4AF37] font-extrabold uppercase tracking-widest">Cabut Kas 1</p>
+                      <p className="text-xl font-black font-mono mt-0.5 text-[#FFD700]">
+                        {counters['Cabut Kas 1']} <span className="text-xs font-sans text-slate-400 font-medium">Bank</span>
                       </p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end justify-between h-full py-1 z-10">
                     <span className="h-2 w-2 rounded-full bg-rose-400 animate-ping mb-2" />
                     {/* Micro critical spike graph */}
-                    <svg className="w-12 h-5 text-rose-400/60 hidden sm:block" viewBox="0 0 50 20">
+                    <svg className="w-12 h-5 text-rose-400/80 hidden sm:block" viewBox="0 0 50 20">
                       <path d="M0,10 L12,10 L18,2 L24,18 L30,10 L50,10" fill="transparent" stroke="currentColor" strokeWidth="2" />
                     </svg>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 </div>
 
               </div>
@@ -4094,6 +4037,10 @@ export default function App() {
               </div>
           </>
         ) : null}
+
+        {activeTab === 'loan' && (
+          <PeminjamanDanaReport showToast={showToast} />
+        )}
 
         {activeTab === 'pending_wd' && (
           <PendingWdReport showToast={showToast} />
