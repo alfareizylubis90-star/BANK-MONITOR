@@ -39,8 +39,11 @@ interface PeminjamanDanaReportProps {
 export default function PeminjamanDanaReport({ showToast }: PeminjamanDanaReportProps) {
   // Input paste text state
   const [pasteInput, setPasteInput] = useState<string>(() => {
-    return localStorage.getItem('loan_paste_input') || `BCA 2770833313 Ami 25,000,000
-BCA 5800670464 KADEK ARYA BUDIARTA 25,000,000`;
+    const saved = localStorage.getItem('loan_paste_input');
+    if (!saved || saved.includes('BCA 2770833313 Ami 25,000,000')) {
+      return '';
+    }
+    return saved;
   });
 
   // Default Bank Suffix (e.g. 'BERSIH')
@@ -366,7 +369,7 @@ Nominal : ${nominalDisplay}`;
               <textarea
                 value={pasteInput}
                 onChange={(e) => setPasteInput(e.target.value)}
-                placeholder="Tempel data transaksi di sini...&#10;Contoh:&#10;BCA 2770833313 Ami 25,000,000&#10;BCA 5800670464 KADEK ARYA BUDIARTA 25,000,000"
+                placeholder="Tempel data transaksi di sini..."
                 rows={8}
                 className="w-full bg-black/80 border border-[#D4AF37]/30 rounded-xl p-3.5 font-mono text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FFD700] focus:ring-1 focus:ring-[#FFD700] transition-all resize-y shadow-inner"
               />
