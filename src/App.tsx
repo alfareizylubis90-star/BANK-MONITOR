@@ -49,6 +49,7 @@ import { Bank, BankStatus, QrisRecord } from './types';
 import FollowUpReport from './components/FollowUpReport';
 import PendingWdReport from './components/PendingWdReport';
 import PeminjamanDanaReport from './components/PeminjamanDanaReport';
+import LockReport from './components/LockReport';
 import EditBankModal from './components/EditBankModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import HistoryPanel from './components/HistoryPanel';
@@ -265,9 +266,9 @@ export default function App() {
   }, [banks, role]);
 
   // Active Tab state
-  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris' | 'pending_wd' | 'loan'>(() => {
+  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris' | 'pending_wd' | 'loan' | 'lock_report'>(() => {
     const saved = localStorage.getItem('bank_status_active_tab');
-    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris' || saved === 'pending_wd' || saved === 'loan') {
+    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris' || saved === 'pending_wd' || saved === 'loan' || saved === 'lock_report') {
       return saved as any;
     }
     return 'monitor';
@@ -1952,6 +1953,17 @@ export default function App() {
       isActive: activeTab === 'loan'
     },
     { 
+      id: 'lock_report', 
+      name: 'Laporan Lock Sekali Tempel', 
+      icon: Lock,
+      badge: 'BARU',
+      badgeColor: 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
+      action: () => {
+        setActiveTab('lock_report');
+      },
+      isActive: activeTab === 'lock_report'
+    },
+    { 
       id: 'pending_wd', 
       name: 'Laporan WD Pending', 
       icon: Zap,
@@ -1984,7 +1996,7 @@ export default function App() {
 
   // Render Sidebar Navigation with Dashboard Dropdown Accordion
   const renderSidebarNav = (isMobile: boolean = false) => {
-    const isDashboardActiveGroup = ['monitor', 'pending_wd', 'qris', 'loan'].includes(activeTab);
+    const isDashboardActiveGroup = ['monitor', 'pending_wd', 'qris', 'loan', 'lock_report'].includes(activeTab);
 
     return (
       <nav className="flex-1 px-3 py-5 space-y-2 overflow-y-auto">
@@ -2980,6 +2992,7 @@ export default function App() {
                         : 'Daftar Rekening Bank'
                   )}
                   {activeTab === 'loan' && 'Peminjaman Dana Sekali Tempel'}
+                  {activeTab === 'lock_report' && 'Laporan Lock Sekali Tempel'}
                   {activeTab === 'qris' && 'Pencairan QRIS Minera'}
                   {activeTab === 'pending_wd' && 'Laporan WD Pending (Minera & Pay2Me)'}
                   {activeTab === 'followup' && 'Laporan Follow Up'}
@@ -4040,6 +4053,10 @@ export default function App() {
 
         {activeTab === 'loan' && (
           <PeminjamanDanaReport showToast={showToast} />
+        )}
+
+        {activeTab === 'lock_report' && (
+          <LockReport showToast={showToast} />
         )}
 
         {activeTab === 'pending_wd' && (
