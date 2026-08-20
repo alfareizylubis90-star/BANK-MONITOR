@@ -270,8 +270,8 @@ JENIS BANK :${item.bankName}
 USERID : ${item.userId}
 NAMA REKENING : ${item.accountName}
 NOMOR REKENING : ${item.accountNumber}
-LAMPIRAN : ${linksStr}
-STATUS : ${item.status}`;
+STATUS : ${item.status}
+LAMPIRAN : ${linksStr}`;
     }).join(
       copySeparator === 'blank_line' 
         ? '\n\n' 
@@ -303,8 +303,8 @@ JENIS BANK :${item.bankName}
 USERID : ${item.userId}
 NAMA REKENING : ${item.accountName}
 NOMOR REKENING : ${item.accountNumber}
-LAMPIRAN : ${linksStr}
-STATUS : ${item.status}`;
+STATUS : ${item.status}
+LAMPIRAN : ${linksStr}`;
 
     navigator.clipboard.writeText(text);
     setCopiedId(item.id);
