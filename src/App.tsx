@@ -42,7 +42,9 @@ import {
   ShieldAlert,
   QrCode,
   DollarSign,
-  HandCoins
+  HandCoins,
+  UserX,
+  ArrowDownToLine
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bank, BankStatus, QrisRecord } from './types';
@@ -50,6 +52,8 @@ import FollowUpReport from './components/FollowUpReport';
 import PendingWdReport from './components/PendingWdReport';
 import PeminjamanDanaReport from './components/PeminjamanDanaReport';
 import LockReport from './components/LockReport';
+import HapusWhitelistReport from './components/HapusWhitelistReport';
+import TarikWithdrawReport from './components/TarikWithdrawReport';
 import EditBankModal from './components/EditBankModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import HistoryPanel from './components/HistoryPanel';
@@ -266,9 +270,9 @@ export default function App() {
   }, [banks, role]);
 
   // Active Tab state
-  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris' | 'pending_wd' | 'loan' | 'lock_report'>(() => {
+  const [activeTab, setActiveTab] = useState<'monitor' | 'followup' | 'history' | 'qris' | 'pending_wd' | 'loan' | 'lock_report' | 'whitelist_report' | 'tarik_wd'>(() => {
     const saved = localStorage.getItem('bank_status_active_tab');
-    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris' || saved === 'pending_wd' || saved === 'loan' || saved === 'lock_report') {
+    if (saved === 'monitor' || saved === 'followup' || saved === 'history' || saved === 'qris' || saved === 'pending_wd' || saved === 'loan' || saved === 'lock_report' || saved === 'whitelist_report' || saved === 'tarik_wd') {
       return saved as any;
     }
     return 'monitor';
@@ -1931,19 +1935,8 @@ export default function App() {
   // Dashboard Sub-menu Items (Dropdown items under DASHBOARD)
   const dashboardSubItems = [
     { 
-      id: 'monitor', 
-      name: 'Dashboard Utama', 
-      icon: BarChart3,
-      action: () => {
-        setActiveTab('monitor');
-        setShowOnlyBermasalah(false);
-        setDashboardViewMode('grafik');
-      },
-      isActive: activeTab === 'monitor' && !showOnlyBermasalah && dashboardViewMode === 'grafik'
-    },
-    { 
       id: 'loan', 
-      name: 'Peminjaman Dana Sekali Tempel', 
+      name: 'Peminjaman Dana', 
       icon: HandCoins,
       badge: 'BARU',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
@@ -1954,7 +1947,7 @@ export default function App() {
     },
     { 
       id: 'lock_report', 
-      name: 'Laporan Lock Sekali Tempel', 
+      name: 'Laporan Lock', 
       icon: Lock,
       badge: 'BARU',
       badgeColor: 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
@@ -1962,6 +1955,28 @@ export default function App() {
         setActiveTab('lock_report');
       },
       isActive: activeTab === 'lock_report'
+    },
+    { 
+      id: 'whitelist_report', 
+      name: 'Laporan Hapus Whitelist', 
+      icon: UserX,
+      badge: 'BARU',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+      action: () => {
+        setActiveTab('whitelist_report');
+      },
+      isActive: activeTab === 'whitelist_report'
+    },
+    { 
+      id: 'tarik_wd', 
+      name: 'Tarik Withdraw', 
+      icon: ArrowDownToLine,
+      badge: '1000+',
+      badgeColor: 'bg-sky-500/20 text-sky-300 border border-sky-500/30',
+      action: () => {
+        setActiveTab('tarik_wd');
+      },
+      isActive: activeTab === 'tarik_wd'
     },
     { 
       id: 'pending_wd', 
@@ -1996,7 +2011,7 @@ export default function App() {
 
   // Render Sidebar Navigation with Dashboard Dropdown Accordion
   const renderSidebarNav = (isMobile: boolean = false) => {
-    const isDashboardActiveGroup = ['monitor', 'pending_wd', 'qris', 'loan', 'lock_report'].includes(activeTab);
+    const isDashboardActiveGroup = ['monitor', 'pending_wd', 'qris', 'loan', 'lock_report', 'whitelist_report', 'tarik_wd'].includes(activeTab);
 
     return (
       <nav className="flex-1 px-3 py-5 space-y-2 overflow-y-auto">
@@ -2991,8 +3006,10 @@ export default function App() {
                         ? 'Dashboard Utama (Analisis Grafik)' 
                         : 'Daftar Rekening Bank'
                   )}
-                  {activeTab === 'loan' && 'Peminjaman Dana Sekali Tempel'}
-                  {activeTab === 'lock_report' && 'Laporan Lock Sekali Tempel'}
+                  {activeTab === 'loan' && 'Peminjaman Dana'}
+                  {activeTab === 'lock_report' && 'Laporan Lock'}
+                  {activeTab === 'whitelist_report' && 'Laporan Hapus Whitelist'}
+                  {activeTab === 'tarik_wd' && 'Tarik Withdraw (5 Kolom Kesamping)'}
                   {activeTab === 'qris' && 'Pencairan QRIS Minera'}
                   {activeTab === 'pending_wd' && 'Laporan WD Pending (Minera & Pay2Me)'}
                   {activeTab === 'followup' && 'Laporan Follow Up'}
@@ -4057,6 +4074,14 @@ export default function App() {
 
         {activeTab === 'lock_report' && (
           <LockReport showToast={showToast} />
+        )}
+
+        {activeTab === 'whitelist_report' && (
+          <HapusWhitelistReport showToast={showToast} />
+        )}
+
+        {activeTab === 'tarik_wd' && (
+          <TarikWithdrawReport showToast={showToast} />
         )}
 
         {activeTab === 'pending_wd' && (

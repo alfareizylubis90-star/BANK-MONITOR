@@ -307,7 +307,7 @@ Nominal : ${nominalDisplay}`;
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-wide uppercase">
-                Peminjaman Dana Sekali Tempel
+                Peminjaman Dana
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#D4AF37]/20 text-[#FFD700] border border-[#D4AF37]/40">
                 VIP AUTO PARSER
